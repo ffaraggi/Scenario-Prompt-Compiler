@@ -3,318 +3,426 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mindy — Scenario Prompt Compiler</title>
+<title>Mindy — Scenario Prompt Compiler v8</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0f0f0f;
-    --surface: #181818;
-    --surface2: #222222;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f0ede6;
-    --muted: #888580;
-    --accent: #c8a96e;
-    --accent2: #8fb89a;
-    --danger: #c86e6e;
-    --info: #8faacc;
-    --radius: 10px;
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f2f1ee;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1a18;
+    --muted: #6b6966;
+    --accent: #b8924a;
+    --accent-bg: #fdf5e8;
+    --accent2: #3a7d57;
+    --accent2-bg: #edf6f1;
+    --danger: #b84a4a;
+    --danger-bg: #fdf0f0;
+    --info: #3a5f8a;
+    --info-bg: #edf2f8;
+    --radius: 8px;
+    --radius-lg: 12px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; }
 
-  header { border-bottom: 1px solid var(--border); padding: 18px 32px; display: flex; align-items: baseline; gap: 14px; }
-  header h1 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; color: var(--accent); }
-  header span { color: var(--muted); font-size: 13px; }
+  /* HEADER */
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: baseline; gap: 12px; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 20px; font-weight: 400; color: var(--accent); }
+  header .tagline { color: var(--muted); font-size: 12px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .api-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 5px 12px; font-size: 12px;
+  }
+  .api-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .api-dot.ok { background: var(--accent2); }
+  .api-input-wrap { display: flex; gap: 6px; align-items: center; }
+  .api-input-wrap input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 5px 9px; outline: none; width: 220px; }
+  .api-input-wrap input:focus { border-color: var(--accent); }
+  .btn-xs { padding: 5px 10px; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.15s; border: 1px solid var(--border2); background: var(--surface); color: var(--muted); }
+  .btn-xs:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-xs.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-xs.primary:hover { opacity: 0.88; }
+  .btn-xs.danger { border-color: rgba(184,74,74,0.3); color: var(--danger); }
+  .btn-xs.danger:hover { background: var(--danger-bg); }
+  .item-actions { display:flex; gap:4px; margin-top:4px; }
+  .editable-list { display:flex; flex-direction:column; gap:6px; }
+  .editable-item { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:8px 10px; }
+  .editable-item-name { font-size:12px; font-weight:500; color:var(--text); margin-bottom:4px; }
+  .editable-item-sub { font-size:11px; color:var(--muted); }
 
-  .layout { display: grid; grid-template-columns: 320px 300px 1fr; min-height: calc(100vh - 61px); }
-  .col { border-right: 1px solid var(--border); padding: 22px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
-  .col:last-child { border-right: none; }
-  .col-title { font-size: 10px; font-weight: 500; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  /* LAYOUT */
+  .layout { display: grid; grid-template-columns: 340px 300px 1fr; min-height: calc(100vh - 57px); }
+  .col { border-right: 1px solid var(--border); padding: 20px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; background: var(--surface); }
+  .col:last-child { border-right: none; background: var(--bg); }
+  .col-middle { background: #fafaf8; }
 
+  /* SECTION HEADERS */
+  .section-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
+  .section-title { font-size: 10px; font-weight: 500; letter-spacing: 1.3px; text-transform: uppercase; color: var(--muted); }
+  .section-action { font-size: 11px; color: var(--accent); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; }
+  .section-action:hover { opacity: 0.75; }
+
+  .divider { height: 1px; background: var(--border); }
+
+  /* FIELDS */
   .field { display: flex; flex-direction: column; gap: 4px; }
-  .field label { font-size: 11px; color: var(--muted); letter-spacing: 0.3px; }
+  .field label { font-size: 11px; color: var(--muted); letter-spacing: 0.3px; display: flex; align-items: center; gap: 5px; }
+  .field label .opt { font-size: 10px; color: #bbb; }
   .field input, .field textarea, .field select {
     background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius);
     color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
-    padding: 8px 11px; outline: none; transition: border-color 0.2s; width: 100%;
+    padding: 7px 10px; outline: none; transition: border-color 0.2s; width: 100%;
   }
-  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
-  .field textarea { resize: vertical; min-height: 60px; }
-  .field select option { background: #222; }
-  .divider { height: 1px; background: var(--border); }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); background: #fff; }
+  .field textarea { resize: vertical; min-height: 56px; }
+  .field select option { background: #fff; }
+  .field select { cursor: pointer; }
 
-  /* PATHWAY LIBRARY */
-  .pathway-header {
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .pathway-header span { font-size: 11px; color: var(--muted); }
-  .btn-link {
-    background: none; border: none; color: var(--accent); font-family: 'DM Sans', sans-serif;
-    font-size: 11px; cursor: pointer; padding: 0; text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .btn-link:hover { opacity: 0.75; }
+  .field-row { display: grid; gap: 10px; }
+  .field-row.cols2 { grid-template-columns: 1fr 1fr; }
+  .field-row.cols3 { grid-template-columns: 1fr 1fr 1fr; }
 
-  .pathway-select-wrap { position: relative; }
-  .pathway-select-wrap select {
-    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius);
-    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
-    padding: 8px 11px; outline: none; width: 100%; cursor: pointer;
-    transition: border-color 0.2s;
-  }
-  .pathway-select-wrap select:focus { border-color: var(--accent); }
+  /* PROFILE SELECTOR */
+  .profile-bar { display: flex; gap: 6px; align-items: center; }
+  .profile-bar select { flex: 1; background: var(--accent-bg); border: 1px solid rgba(184,146,74,0.25); border-radius: var(--radius); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 6px 9px; outline: none; cursor: pointer; }
+  .profile-bar select:focus { border-color: var(--accent); }
+  .btn-save-profile { padding: 6px 10px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .btn-save-profile:hover { opacity: 0.88; }
+  .btn-del-profile { padding: 6px 8px; background: transparent; border: 1px solid var(--border2); border-radius: var(--radius); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
+  .btn-del-profile:hover { border-color: var(--danger); color: var(--danger); }
 
-  .pathway-preview {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 10px 12px; font-size: 12px; line-height: 1.6; display: none;
-  }
+  /* TAGS / BADGES */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 500; }
+  .badge.required { background: var(--danger-bg); color: var(--danger); }
+  .badge.optional { background: var(--surface2); color: var(--muted); }
+  .badge.mode { background: var(--accent-bg); color: var(--accent); }
+
+  /* DIFFICULTY SELECT */
+  .diff-btns { display: flex; gap: 5px; }
+  .diff-btn { flex: 1; padding: 6px 4px; border: 1px solid var(--border2); border-radius: 6px; background: var(--surface2); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .diff-btn.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+
+  /* PATHWAY SECTION */
+  .pathway-preview { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-size: 12px; line-height: 1.6; display: none; }
   .pathway-preview.visible { display: block; }
-  .pathway-preview .pw-row { margin-bottom: 5px; }
-  .pathway-preview .pw-row:last-child { margin-bottom: 0; }
-  .pw-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; display: block; margin-bottom: 1px; }
-  .pw-val { color: var(--text); }
+  .pw-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); display: block; margin-bottom: 1px; }
   .pw-a { color: var(--accent2); }
   .pw-b { color: var(--danger); }
+  .pw-row { margin-bottom: 6px; }
+  .pw-row:last-child { margin-bottom: 0; }
 
-  /* Add pathway form */
-  .add-pathway-form {
-    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius);
-    padding: 12px; display: flex; flex-direction: column; gap: 8px; display: none;
-  }
-  .add-pathway-form.visible { display: flex; }
-  .add-pathway-form .form-title { font-size: 11px; font-weight: 500; color: var(--accent); }
-  .btn-small {
-    padding: 6px 12px; border-radius: 6px; font-family: 'DM Sans', sans-serif;
-    font-size: 12px; cursor: pointer; transition: all 0.15s;
-  }
-  .btn-save { background: var(--accent); color: #0f0f0f; border: none; font-weight: 500; }
-  .btn-save:hover { opacity: 0.85; }
-  .btn-cancel { background: transparent; border: 1px solid var(--border2); color: var(--muted); }
-  .btn-cancel:hover { color: var(--text); }
+  .add-form { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px; flex-direction: column; gap: 8px; display: none; }
+  .add-form.visible { display: flex; }
+  .add-form-title { font-size: 11px; font-weight: 500; color: var(--accent); }
+  .btn-small { padding: 6px 12px; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
+  .btn-save-s { background: var(--accent); color: #fff; border: none; font-weight: 500; }
+  .btn-cancel-s { background: transparent; border: 1px solid var(--border2); color: var(--muted); }
 
   /* SCORING */
-  .scoring-section { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
-  .scoring-title { font-size: 11px; font-weight: 500; color: var(--text); margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
-  .mode-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
-  .mode-badge.practice { background: rgba(143,184,154,0.15); color: var(--accent2); }
-  .mode-badge.assessment { background: rgba(200,169,110,0.15); color: var(--accent); }
-  .mode-badge.partner { background: rgba(143,170,204,0.15); color: var(--info); }
-
-  .criteria-list { display: flex; flex-direction: column; gap: 6px; }
-  .criterion-row {
-    display: grid; grid-template-columns: 1fr 50px 50px; gap: 6px; align-items: center;
-  }
-  .criterion-row input[type=text] {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px;
-    padding: 5px 8px; outline: none;
-  }
-  .criterion-row input[type=text]:focus { border-color: var(--accent); }
-  .criterion-row input[type=number] {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-    color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 12px;
-    padding: 5px 6px; outline: none; text-align: center; width: 100%;
-  }
-  .criterion-row input[type=number]:focus { border-color: var(--accent); }
-  .criterion-row .btn-remove-c {
-    background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; text-align: center;
-  }
-  .criterion-row .btn-remove-c:hover { color: var(--danger); }
-
-  .criteria-header { display: grid; grid-template-columns: 1fr 50px 50px; gap: 6px; margin-bottom: 2px; }
+  .scoring-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+  .criteria-header { display: grid; grid-template-columns: 1fr 52px 28px; gap: 6px; margin-bottom: 4px; }
   .criteria-header span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
-
-  .btn-add-c { background: none; border: 1px dashed var(--border2); border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; padding: 5px 10px; width: 100%; margin-top: 4px; transition: all 0.15s; }
+  .criteria-list { display: flex; flex-direction: column; gap: 5px; }
+  .criterion-row { display: grid; grid-template-columns: 1fr 52px 28px; gap: 6px; align-items: center; }
+  .criterion-row input[type=text] { background: #fff; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 5px 8px; outline: none; }
+  .criterion-row input[type=text]:focus { border-color: var(--accent); }
+  .criterion-row input[type=number] { background: #fff; border: 1px solid var(--border); border-radius: 6px; color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 5px 4px; outline: none; text-align: center; width: 100%; }
+  .criterion-row .btn-rc { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; text-align: center; }
+  .criterion-row .btn-rc:hover { color: var(--danger); }
+  .btn-add-c { background: none; border: 1px dashed var(--border2); border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; padding: 5px 10px; width: 100%; margin-top: 4px; }
   .btn-add-c:hover { border-color: var(--accent); color: var(--accent); }
-
   .weight-total { font-size: 11px; text-align: right; margin-top: 4px; }
-  .weight-total.ok { color: var(--accent2); }
-  .weight-total.warn { color: var(--danger); }
+  .weight-ok { color: var(--accent2); }
+  .weight-warn { color: var(--danger); }
 
-  .scoring-note { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
-  .scoring-note b { color: var(--text); font-weight: 500; }
+  /* MODE TABS */
+  .mode-tabs { display: flex; gap: 0; border: 1px solid var(--border2); border-radius: var(--radius); overflow: hidden; }
+  .mode-tab { flex: 1; padding: 7px 6px; background: var(--surface2); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; border: none; text-align: center; transition: all 0.15s; border-right: 1px solid var(--border2); }
+  .mode-tab:last-child { border-right: none; }
+  .mode-tab.active { background: var(--accent); color: #fff; font-weight: 500; }
 
   /* KB */
-  .drop-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 16px 12px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
-  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(200,169,110,0.04); }
+  .drop-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 14px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-bg); }
   .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .drop-zone p { font-size: 12px; color: var(--muted); line-height: 1.5; }
   .drop-zone p strong { color: var(--text); }
-
-  .file-list { display: flex; flex-direction: column; gap: 6px; }
-  .file-item { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; animation: fadeIn 0.2s ease; }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:none; } }
-  .file-icon { width: 26px; height: 26px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; flex-shrink: 0; }
-  .file-icon.pdf { background: rgba(200,110,110,0.15); color: #c86e6e; }
-  .file-icon.txt { background: rgba(143,170,204,0.15); color: var(--info); }
+  .file-list { display: flex; flex-direction: column; gap: 5px; }
+  .file-item { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 9px; }
+  .file-icon { width: 24px; height: 24px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 500; flex-shrink: 0; }
+  .file-icon.pdf { background: var(--danger-bg); color: var(--danger); }
+  .file-icon.txt { background: var(--info-bg); color: var(--info); }
   .file-meta { flex: 1; min-width: 0; }
-  .file-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-name { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .file-size { font-size: 10px; color: var(--muted); }
-  .file-category { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; padding: 3px 5px; outline: none; flex-shrink: 0; }
-  .btn-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; flex-shrink: 0; }
-  .btn-remove:hover { color: var(--danger); }
+  .file-cat { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 10px; padding: 2px 5px; outline: none; flex-shrink: 0; }
+  .btn-rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; flex-shrink: 0; }
+  .btn-rm:hover { color: var(--danger); }
 
-  /* Generate */
-  .btn-generate { width: 100%; padding: 12px; background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+  /* GENERATE */
+  .btn-generate { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
   .btn-generate:hover { opacity: 0.88; }
   .btn-generate:disabled { opacity: 0.35; cursor: not-allowed; }
-  .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #0f0f0f; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .status { font-size: 11px; color: var(--muted); text-align: center; }
   .status.error { color: var(--danger); }
   .status.ok { color: var(--accent2); }
 
-  /* Output */
+  /* OUTPUT */
   .role-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
-  .rtab { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.15s; }
-  .rtab:hover { color: var(--text); }
-  .rtab.active { background: rgba(200,169,110,0.12); border-color: rgba(200,169,110,0.35); color: var(--accent); font-weight: 500; }
+  .rtab { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .rtab:hover { border-color: var(--accent); color: var(--accent); }
+  .rtab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
 
-  .prompt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; flex: 1; display: flex; flex-direction: column; min-height: 300px; }
+  .prompt-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); flex: 1; display: flex; flex-direction: column; min-height: 320px; }
   .prompt-card-header { padding: 11px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .role-info { display: flex; align-items: center; gap: 8px; }
   .role-dot { width: 7px; height: 7px; border-radius: 50%; }
   .role-name { font-weight: 500; font-size: 13px; }
   .role-desc { font-size: 11px; color: var(--muted); }
-  .btn-copy { background: transparent; border: 1px solid var(--border2); border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; padding: 4px 10px; cursor: pointer; transition: all 0.15s; }
-  .btn-copy:hover { color: var(--text); }
-  .prompt-body { padding: 16px; flex: 1; font-size: 12.5px; line-height: 1.8; color: var(--text); white-space: pre-wrap; word-break: break-word; overflow-y: auto; }
+  .btn-copy { background: transparent; border: 1px solid var(--border2); border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; padding: 4px 10px; cursor: pointer; }
+  .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+  .prompt-body { padding: 16px; flex: 1; font-size: 12.5px; line-height: 1.85; color: var(--text); white-space: pre-wrap; word-break: break-word; overflow-y: auto; }
   .prompt-body.empty { color: var(--muted); font-style: italic; font-size: 13px; }
+
+
+  .skill-tag { display:inline-flex; align-items:center; gap:5px; background:var(--accent-bg); border:1px solid rgba(184,146,74,0.3); border-radius:20px; padding:3px 10px; font-size:11px; font-weight:500; color:var(--accent); }
+  .tip-tag   { display:inline-flex; align-items:center; gap:5px; background:var(--info-bg);   border:1px solid rgba(58,95,138,0.25); border-radius:20px; padding:3px 10px; font-size:11px; font-weight:500; color:var(--info); }
+  .tag-rm { background:none; border:none; cursor:pointer; color:inherit; font-size:12px; padding:0; line-height:1; opacity:0.6; }
+  .tag-rm:hover { opacity:1; }
+  .hint-box { background: var(--accent-bg); border: 1px solid rgba(184,146,74,0.2); border-radius: var(--radius); padding: 9px 11px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .guardrail-item { display:flex; align-items:center; gap:8px; background:var(--danger-bg); border:1px solid rgba(184,74,74,0.15); border-radius:var(--radius); padding:7px 10px; font-size:12px; animation: fadeIn 0.2s ease; }
+  .guardrail-item .gi-icon { width:18px; height:18px; border-radius:50%; background:rgba(184,74,74,0.15); color:var(--danger); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+  .guardrail-item .gi-text { flex:1; color:var(--text); line-height:1.4; }
+  .guardrail-item .gi-rm { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; flex-shrink:0; }
+  .guardrail-item .gi-rm:hover { color:var(--danger); }
+  .hint-box b { color: var(--text); font-weight: 500; }
 </style>
 </head>
 <body>
 
+<!-- HEADER WITH API KEY -->
 <header>
-  <h1>Mindy</h1>
-  <span>Scenario Prompt Compiler v3 — 100 Minds</span>
+  <div class="header-left">
+    <h1>Mindy</h1>
+    <span class="tagline">Scenario Prompt Compiler v4 — 100 Minds</span>
+  </div>
+  <div class="header-right">
+    <div class="api-pill">
+      <div class="api-dot" id="api-dot"></div>
+      <span id="api-label" style="color:var(--muted);font-size:12px">API key</span>
+    </div>
+    <div class="api-input-wrap">
+      <input type="password" id="api-key" placeholder="sk-ant-..." />
+      <button class="btn-xs primary" onclick="saveKey()">Guardar</button>
+    </div>
+  </div>
 </header>
 
 <div class="layout">
 
-  <!-- COL 1: SCENARIO + PATHWAYS + SCORING -->
+  <!-- ══ COL 1: SCENARIO ══ -->
   <div class="col">
-    <div class="col-title">Escenario y parámetros</div>
 
-    <div class="field" id="api-key-field">
-      <label>Anthropic API key <span id="api-key-status" style="color:var(--accent2);font-size:10px"></span></label>
-      <div style="display:flex;gap:6px">
-        <input type="password" id="api-key" placeholder="sk-ant-..." style="flex:1" />
-        <button onclick="saveKey()" style="padding:8px 12px;background:var(--accent);color:#0f0f0f;border:none;border-radius:var(--radius);font-family:DM Sans,sans-serif;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap">Guardar</button>
+    <!-- MODE -->
+    <div>
+      <div class="section-head"><span class="section-title">Modo de sesión</span></div>
+      <div class="mode-tabs" style="margin-top:8px">
+        <button class="mode-tab active" id="tab-roleplay"  onclick="setMode('roleplay')">Role-play</button>
+        <button class="mode-tab"        id="tab-partner"   onclick="setMode('partner')">Partner / Coaching</button>
+        
       </div>
-      <div style="font-size:10px;color:var(--muted);margin-top:2px">Se guarda en tu browser. Solo debes ingresarla una vez.</div>
+      <div id="mode-hint" style="margin-top:8px"></div>
     </div>
 
     <div class="divider"></div>
 
-    <div class="field"><label>Power skill a desarrollar</label><input type="text" id="skill" placeholder="Ej: Dar feedback efectivo" /></div>
-    <div class="field"><label>Framework / powertip clave</label><textarea id="powertip" placeholder="Ej: SBI — Situación, Comportamiento, Impacto..."></textarea></div>
+    <!-- ACTIVE COMPANY LINKER -->
+    <div id="company-linker">
+      <div class="section-head"><span class="section-title">Empresa activa</span></div>
+      <div class="profile-bar" style="margin-top:6px">
+        <select id="active-company-select" onchange="activateCompany(this.value)" style="flex:1;background:var(--accent-bg);border:1px solid rgba(184,146,74,0.25)">
+          <option value="">— Sin empresa seleccionada —</option>
+        </select>
+      </div>
+      <div id="active-company-badge" style="display:none;margin-top:6px;padding:7px 10px;background:var(--accent-bg);border:1px solid rgba(184,146,74,0.2);border-radius:var(--radius);font-size:11px;color:var(--accent)"></div>
+    </div>
 
-    <div class="divider"></div>
+    <!-- PARTNER DOCS PREVIEW -->
+    <div id="partner-docs-block" style="display:none">
+      <div class="section-head"><span class="section-title">Documentos vinculados</span></div>
+      <div id="partner-docs-list" style="margin-top:8px;font-size:12px;color:var(--muted)">
+        Selecciona una empresa para ver sus documentos.
+      </div>
+    </div>
 
-    <div class="field"><label>Nombre del escenario</label><input type="text" id="scenario-name" placeholder="Ej: Feedback a colega que interrumpe" /></div>
-    <div class="field"><label>Contexto de negocio</label><textarea id="context" placeholder="Ej: Reuniones donde un colaborador interrumpe frecuentemente..." style="min-height:52px"></textarea></div>
-    <div class="field"><label>Rol del learner</label><input type="text" id="learner-role" placeholder="Ej: Líder de equipo" /></div>
-    <div class="field"><label>Rol del avatar</label><input type="text" id="avatar-role" placeholder="Ej: Colaborador directo" /></div>
+    <!-- SCENARIO STRUCTURED -->
+    <div id="scenario-block">
+      <div class="section-head">
+        <span class="section-title">Escenario</span>
+        <button class="section-action" onclick="toggleScenarioForm()">+ Guardar escenario</button>
+      </div>
+
+      <!-- Scenario profile selector -->
+      <div class="profile-bar" style="margin-bottom:10px;margin-top:6px">
+        <select id="scenario-profile-select" onchange="loadScenarioProfile(this.value)">
+          <option value="">— Nuevo escenario —</option>
+        </select>
+        <button class="btn-del-profile" onclick="deleteScenarioProfile()" title="Eliminar perfil">✕</button>
+      </div>
+
+      <div id="save-scenario-form" class="add-form">
+        <div class="add-form-title">Guardar este escenario como...</div>
+        <div class="field"><input type="text" id="scenario-save-name" placeholder="Ej: Feedback defensivo — Mining" /></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-small btn-save-s" onclick="saveScenarioProfile()">Guardar</button>
+          <button class="btn-small btn-cancel-s" onclick="toggleScenarioForm()">Cancelar</button>
+        </div>
+      </div>
+
+      <div id="scenario-partner-note" style="display:none">
+        <div class="hint-box">En modo Partner no hay escenario fijo. El usuario activa a Mindy cuando necesita ayuda — el tema lo define él en el momento.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="field"><label id="scenario-title-label">Título del escenario <span class="badge required">requerido</span></label><input type="text" id="scenario-title" placeholder="Ej: Feedback a colaborador que interrumpe en reuniones" /></div>
+        <div class="field"><label id="objective-label">Objetivo de aprendizaje</label><textarea id="scenario-objective" placeholder="Ej: El learner practica dar feedback específico usando SBI sin activar defensividad" style="min-height:50px"></textarea></div>
+      </div><!-- title field ends -->
+      <div id="scenario-roleplay-fields" style="display:flex;flex-direction:column;gap:10px">
+        <div class="field-row cols2">
+          <div class="field"><label>Relación entre partes</label><input type="text" id="scenario-relation" placeholder="Ej: Jefe directo / colaborador" /></div>
+          <div class="field"><label>Tono emocional inicial</label><input type="text" id="scenario-tone" placeholder="Ej: Tenso, guardado" /></div>
+        </div>
+        <div class="field"><label>Evento gatillante</label><input type="text" id="scenario-trigger" placeholder="Ej: Tres reuniones consecutivas con interrupciones" /></div>
+        <div class="field"><label>¿Qué está en juego?</label><input type="text" id="scenario-stakes" placeholder="Ej: Relación laboral y credibilidad del líder ante el equipo" /></div>
+</div><!-- end scenario structured inner -->
+
+    <div id="diff-section"><div style="display:flex;flex-direction:column;gap:10px">
+        <div class="field"><label>Dificultad</label>
+          <div class="diff-btns">
+            <button class="diff-btn active" onclick="setDiff(this,'Básica')">Básica</button>
+            <button class="diff-btn" onclick="setDiff(this,'Media')">Media</button>
+            <button class="diff-btn" onclick="setDiff(this,'Alta')">Alta</button>
+            <button class="diff-btn" onclick="setDiff(this,'Experta')">Experta</button>
+          </div>
+          <input type="hidden" id="scenario-difficulty" value="Básica" />
+        </div>
+        <div class="field"><label>Nivel de resistencia del avatar</label>
+          <div class="diff-btns">
+            <button class="diff-btn active" onclick="setResist(this,'Baja')">Baja</button>
+            <button class="diff-btn" onclick="setResist(this,'Media')">Media</button>
+            <button class="diff-btn" onclick="setResist(this,'Alta')">Alta</button>
+          </div>
+          <input type="hidden" id="scenario-resistance" value="Baja" />
+        </div>
+      </div>
+    </div>
 
     <div class="divider"></div>
 
     <!-- ARCHETYPE -->
-    <div class="field">
-      <label>Arquetipo del personaje</label>
-      <select id="archetype">
-        <option value="Defensivo — justifica, minimiza, explica intención">Defensivo (justifica, minimiza)</option>
-        <option value="Sensible — toma el feedback de forma personal">Sensible (se lo toma personal)</option>
-        <option value="Cínico — cuestiona la legitimidad del feedback">Cínico (cuestiona legitimidad)</option>
-        <option value="Pasivo-agresivo — asiente verbalmente pero cierra">Pasivo-agresivo</option>
-        <option value="custom">Personalizado...</option>
-      </select>
+    <div id="archetype-section">
+      <div class="section-head">
+        <span class="section-title">Arquetipo del avatar</span>
+        <button class="section-action" onclick="toggleArchetypeForm()">+ Agregar</button>
+      </div>
+
+      <div class="field" style="margin-top:6px">
+        <label>Seleccionar arquetipo</label>
+        <select id="archetype-select" onchange="loadArchetype(this.value)">
+          <option value="">— Selecciona —</option>
+        </select>
+      </div>
+
+      <div id="archetype-edit-list" style="margin-bottom:4px"></div>
+      <div id="archetype-preview" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;font-size:12px;line-height:1.7"></div>
+
+      <div id="archetype-form" class="add-form" style="margin-top:8px">
+        <div class="add-form-title">Nuevo arquetipo</div>
+        <div class="field"><label>Nombre del arquetipo</label><input type="text" id="new-arch-name" placeholder="Ej: Defensivo — Minería Senior" /></div>
+        <div class="field-row cols2">
+          <div class="field"><label>Rol en la empresa</label><input type="text" id="new-arch-role" placeholder="Ej: Operador, jefe turno" /></div>
+          <div class="field"><label>Estado emocional</label><input type="text" id="new-arch-emotion" placeholder="Ej: Guardado, irritable" /></div>
+        </div>
+        <div class="field"><label>Patrón de conducta / resistencia</label><textarea id="new-arch-pattern" placeholder="Ej: Justifica, minimiza, introduce contraejemplos" style="min-height:46px"></textarea></div>
+        <div class="field"><label>Preocupaciones probables</label><textarea id="new-arch-concerns" placeholder="Ej: Que lo perciban como incompetente, perder estatus en el equipo" style="min-height:46px"></textarea></div>
+        <div class="field"><label>Tensión oculta</label><textarea id="new-arch-tension" placeholder="Ej: Sabe que tiene razón parcialmente pero no quiere admitirlo" style="min-height:46px"></textarea></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-small btn-save-s" onclick="saveArchetype()">Guardar</button>
+          <button class="btn-small btn-cancel-s" onclick="toggleArchetypeForm()">Cancelar</button>
+        </div>
+      </div>
     </div>
-    <div class="field" id="archetype-custom-field" style="display:none">
-      <label>Describe el arquetipo</label>
-      <textarea id="archetype-custom" placeholder="Describe la personalidad y patrones de reacción..."></textarea>
-    </div>
+
+    </div><!-- end diff-section -->
 
     <div class="divider"></div>
 
-    <!-- PATHWAY LIBRARY -->
-    <div>
-      <div class="pathway-header" style="margin-bottom:8px">
-        <div class="col-title" style="border:none;padding:0">Pathways</div>
-        <button class="btn-link" onclick="toggleAddForm()">+ Agregar pathway</button>
-      </div>
+    <!-- SOP KB LIST -->
+    <div id="sop-kb-section" style="display:none">
+      <div class="section-head"><span class="section-title">Documentos cargados de la empresa</span></div>
+      <div id="sop-kb-list" style="margin-top:8px;font-size:12px;color:var(--muted)">Selecciona una empresa activa para ver sus documentos.</div>
+    </div>
 
-      <div class="field">
-        <label>Seleccionar pathway guardado</label>
-        <div class="pathway-select-wrap">
-          <select id="pathway-select" onchange="loadPathway(this.value)">
-            <option value="">— Escribe manualmente abajo —</option>
-          </select>
-        </div>
+    <!-- PATHWAYS (only for roleplay) -->
+    <div id="pathways-section">
+      <div class="section-head">
+        <span class="section-title">Pathways de ramificación</span>
+        <button class="section-action" onclick="togglePathwayForm()">+ Agregar</button>
       </div>
-
-      <!-- Preview of selected pathway -->
+      <div class="field" style="margin-top:6px">
+        <label>Seleccionar pathway</label>
+        <select id="pathway-select" onchange="loadPathway(this.value)">
+          <option value="">— Escribe manualmente —</option>
+        </select>
+      </div>
+<div id="pathway-edit-list" style="margin-bottom:4px"></div>
       <div class="pathway-preview" id="pathway-preview"></div>
-
-      <!-- Add new pathway form -->
-      <div class="add-pathway-form" id="add-pathway-form">
-        <div class="form-title">Nuevo pathway</div>
-        <div class="field"><label>Nombre del pathway</label><input type="text" id="new-pw-name" placeholder="Ej: Feedback — Defensivo — Mining" /></div>
-        <div class="field"><label>Pathway A (lo hace bien → avatar reacciona así)</label><textarea id="new-pw-a" placeholder="Ej: Se ablanda, reconoce el impacto, propone próximo paso concreto" style="min-height:52px"></textarea></div>
-        <div class="field"><label>Pathway B (lo hace mal → avatar reacciona así)</label><textarea id="new-pw-b" placeholder="Ej: Escala la defensividad, cuestiona la autoridad, cierra el diálogo" style="min-height:52px"></textarea></div>
-        <div class="field"><label>Pathway C (lo hace regular → opcional)</label><textarea id="new-pw-c" placeholder="Ej: Se estabiliza pero sin compromiso claro, queda ambiguo" style="min-height:40px"></textarea></div>
-        <div style="display:flex;gap:8px">
-          <button class="btn-small btn-save" onclick="savePathway()">Guardar pathway</button>
-          <button class="btn-small btn-cancel" onclick="toggleAddForm()">Cancelar</button>
+      <div id="pathway-form" class="add-form" style="margin-top:8px">
+        <div class="add-form-title">Nuevo pathway</div>
+        <div class="field"><label>Nombre</label><input type="text" id="new-pw-name" placeholder="Ej: Feedback — Defensivo — Mining" /></div>
+        <div class="field"><label>Pathway A — lo hace bien</label><textarea id="new-pw-a" style="min-height:46px" placeholder="Ej: Se ablanda, reconoce, propone próximo paso"></textarea></div>
+        <div class="field"><label>Pathway B — lo hace mal</label><textarea id="new-pw-b" style="min-height:46px" placeholder="Ej: Escala, cuestiona, cierra el diálogo"></textarea></div>
+        <div class="field"><label>Pathway C — regular <span class="opt">(opcional)</span></label><textarea id="new-pw-c" style="min-height:36px" placeholder="Ej: Acepta pero sin compromiso claro"></textarea></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-small btn-save-s" onclick="savePathway()">Guardar</button>
+          <button class="btn-small btn-cancel-s" onclick="togglePathwayForm()">Cancelar</button>
         </div>
       </div>
-
-      <!-- Manual pathway inputs (always visible) -->
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
-        <div class="field"><label>Pathway A — si lo hace bien</label><input type="text" id="path-a" placeholder="Ej: Se ablanda, reconoce impacto, acuerda próximo paso" /></div>
-        <div class="field"><label>Pathway B — si lo hace mal</label><input type="text" id="path-b" placeholder="Ej: Escala la defensividad, cierra el diálogo" /></div>
-        <div class="field"><label>Pathway C — regular (opcional)</label><input type="text" id="path-c" placeholder="Ej: Se estabiliza pero sin compromiso claro" /></div>
+        <div class="field"><label>Pathway A — si lo hace bien</label><input type="text" id="path-a" placeholder="Ej: Se ablanda, reconoce impacto" /></div>
+        <div class="field"><label>Pathway B — si lo hace mal</label><input type="text" id="path-b" placeholder="Ej: Escala la defensividad" /></div>
+        <div class="field"><label>Pathway C — regular <span class="opt">(opcional)</span></label><input type="text" id="path-c" placeholder="Ej: Acepta superficialmente" /></div>
       </div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- MODE -->
-    <div class="field">
-      <label>Modo de sesión</label>
-      <select id="mode" onchange="updateScoringBadge()">
-        <option value="Práctica">Práctica</option>
-        <option value="Assessment">Assessment</option>
-        <option value="Partner">Partner</option>
-      </select>
+    <!-- SCORING (hidden for partner) -->
+    <div id="scoring-section">
+      <div class="section-head"><span class="section-title">Criterios de evaluación</span></div>
+      <div class="scoring-box" style="margin-top:6px">
+        <div class="criteria-header">
+          <span>Criterio observable</span>
+          <span style="text-align:center">Peso %</span>
+          <span></span>
+        </div>
+        <div class="criteria-list" id="criteria-list"></div>
+        <button class="btn-add-c" onclick="addCriterion()">+ Agregar criterio</button>
+        <div class="weight-total" id="weight-total"></div>
+      </div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- SCORING (always shown, adapts per mode) -->
-    <div class="scoring-section">
-      <div class="scoring-title">
-        Criterios de evaluación
-        <span class="mode-badge practice" id="mode-badge">Práctica</span>
-      </div>
-      <div class="scoring-note" style="margin-bottom:10px;margin-top:0;padding-bottom:8px;padding-top:0;border-top:none;border-bottom:1px solid var(--border)">
-        <b>Todos los modos incluyen scoring.</b> En Práctica: feedback inmediato + score orientativo. En Assessment: score formal + certificación. En Partner: reflexión guiada + score suave.
-      </div>
-      <div class="criteria-header">
-        <span>Criterio observable</span>
-        <span style="text-align:center">Peso %</span>
-        <span></span>
-      </div>
-      <div class="criteria-list" id="criteria-list"></div>
-      <button class="btn-add-c" onclick="addCriterion()">+ Agregar criterio</button>
-      <div class="weight-total" id="weight-total"></div>
-      <div class="scoring-note">
-        Define qué conductas observables se evalúan y su peso relativo. Claude las usará como rúbrica para el evaluador y el feedback al learner.
-      </div>
-    </div>
-
     <div class="field">
-      <label>Idioma</label>
+      <label>Idioma de los prompts</label>
       <select id="lang">
         <option value="español (Chile)">Español — Chile</option>
         <option value="español (México)">Español — México</option>
@@ -324,35 +432,178 @@
       </select>
     </div>
 
-    <button class="btn-generate" id="btn" onclick="generate()">Generar 4 prompts</button>
-    <div class="status" id="status"></div>
-  </div>
+    <div class="divider"></div>
 
-  <!-- COL 2: KNOWLEDGE BASE -->
-  <div class="col">
-    <div class="col-title">Knowledge base</div>
-
-    <div class="drop-zone" id="drop-zone">
-      <input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.csv" onchange="handleFiles(this.files)" />
-      <p><strong>Arrastra archivos aquí</strong><br>o haz clic para seleccionar<br><span style="font-size:11px;opacity:0.6">PDF · TXT · MD · CSV — máx 10MB c/u</span></p>
+    <!-- INTRO EDITABLE -->
+    <div id="intro-section">
+      <div class="section-head">
+        <span class="section-title">Introducción de la sesión</span>
+        <button class="section-action" onclick="resetIntro()">Restaurar</button>
+      </div>
+      <div class="hint-box" style="margin:6px 0 8px">Texto que Mindy dice al comenzar — cómo se presenta y arranca la simulación. Personalizable por empresa o modo.</div>
+      <div class="field">
+        <label>Cómo comienza la simulación <span class="opt">(editable)</span></label>
+        <textarea id="session-intro" style="min-height:90px;font-size:12px;line-height:1.7"></textarea>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap" id="intro-presets">
+        <button class="btn-xs" onclick="setIntroPreset('roleplay')">Role-play</button>
+        <button class="btn-xs" onclick="setIntroPreset('partner')">Partner</button>
+        <button class="btn-xs" onclick="setIntroPreset('formal')">Formal</button>
+        <button class="btn-xs" onclick="setIntroPreset('warmup')">Distendido</button>
+      </div>
     </div>
-
-    <div class="file-list" id="file-list"></div>
 
     <div class="divider"></div>
 
-    <div class="field"><label>Framework 100 Minds (texto)</label><textarea id="kb-framework" placeholder="Pega tu framework de Power Skills, definiciones, niveles de competencia..." style="min-height:90px"></textarea></div>
-    <div class="field"><label>Cultura / valores empresa cliente</label><textarea id="kb-company" placeholder="Valores, propósito, desafíos actuales, contexto organizacional..." style="min-height:90px"></textarea></div>
+    <!-- GUARDRAILS -->
+    <div>
+      <div class="section-head">
+        <span class="section-title">Guardrails — qué NO debe hacer la IA</span>
+        <button class="section-action" onclick="toggleGuardrailForm()">+ Agregar</button>
+      </div>
+      <div class="hint-box" style="margin:6px 0 8px">Define límites claros. Se incorporan a todos los prompts generados.</div>
 
-    <div style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;line-height:1.6">
-      Los documentos se envían directo a Claude. El avatar habla con la voz de la empresa, el evaluador usa tu framework real.
+      <div id="guardrail-form" class="add-form">
+        <div class="add-form-title">Nuevo guardrail</div>
+        <div class="field"><input type="text" id="new-guardrail" placeholder="Ej: Nunca mencionar datos reales de empleados" /></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-small btn-save-s" onclick="addGuardrail()">Agregar</button>
+          <button class="btn-small btn-cancel-s" onclick="toggleGuardrailForm()">Cancelar</button>
+        </div>
+      </div>
+
+      <div id="guardrail-list" style="display:flex;flex-direction:column;gap:5px;margin-top:4px"></div>
     </div>
+
+    <div class="divider"></div>
+
+    <button class="btn-generate" id="btn" onclick="generate()">Generar prompts</button>
+    <div class="status" id="status"></div>
   </div>
 
-  <!-- COL 3: OUTPUT -->
-  <div class="col" style="border-right:none">
-    <div class="col-title">Prompts generados</div>
-    <div class="role-tabs">
+  <!-- ══ COL 2: COMPANY + KB ══ -->
+  <div class="col col-middle">
+
+    <!-- COMPANY PROFILE -->
+    <div>
+      <div class="section-head">
+        <span class="section-title">Perfil de empresa</span>
+        <button class="section-action" onclick="saveCompanyProfile()">Guardar perfil</button>
+      </div>
+
+      <div id="company-edit-list" style="margin-bottom:8px"></div>
+      <div class="profile-bar" style="margin-bottom:10px;margin-top:6px">
+        <select id="company-profile-select" onchange="loadCompanyProfile(this.value)">
+          <option value="">— Nuevo perfil —</option>
+        </select>
+        <button class="btn-del-profile" onclick="deleteCompanyProfile()" title="Eliminar">✕</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div class="field-row cols2">
+          <div class="field"><label>Nombre de la empresa</label><input type="text" id="co-name" placeholder="Ej: Anglo American" /></div>
+          <div class="field"><label>Industria / sector</label><input type="text" id="co-industry" placeholder="Ej: Minería" /></div>
+        </div>
+        <div class="field"><label>Propósito organizacional</label><textarea id="co-purpose" placeholder="Ej: Re-imaginar la minería para mejorar la vida de las personas" style="min-height:46px"></textarea></div>
+        <div class="field"><label>Valores declarados</label><textarea id="co-values" placeholder="Ej: Seguridad, respeto, responsabilidad, innovación" style="min-height:46px"></textarea></div>
+        <div class="field"><label>Expectativas de liderazgo</label><textarea id="co-leadership" placeholder="Ej: Líderes que den feedback directo, escuchen activamente y desarrollen a su gente" style="min-height:46px"></textarea></div>
+        <div class="field"><label>Desafíos actuales del negocio</label><textarea id="co-challenges" placeholder="Ej: Alta rotación en operaciones, presión por costos, integración de nuevas tecnologías" style="min-height:46px"></textarea></div>
+        <div class="field"><label>Estilo de comunicación cultural</label><input type="text" id="co-comm-style" placeholder="Ej: Directo, jerárquico, con mucho respeto a la antigüedad" /></div>
+        <div class="field"><label>Jerga / términos propios <span class="opt">(opcional)</span></label><input type="text" id="co-jargon" placeholder="Ej: 'La faena', 'el turno', 'el rajo'" /></div>
+        <div class="field"><label>Frases a evitar <span class="opt">(opcional)</span></label><input type="text" id="co-avoid" placeholder="Ej: No decir 'recurso humano', evitar lenguaje corporativo vacío" /></div>
+        <div class="field"><label>Notas culturales adicionales <span class="opt">(opcional)</span></label><textarea id="co-notes" placeholder="Ej: Cultura muy masculina en operaciones, sensibilidad alta en temas de seguridad" style="min-height:46px"></textarea></div>
+      </div>
+
+      <!-- SOPs vinculados a esta empresa -->
+      <div style="margin-top:12px">
+        <div class="section-head" style="margin-bottom:8px">
+          <span class="section-title">SOPs y manuales de esta empresa</span>
+        </div>
+        <div class="hint-box" style="margin-bottom:8px">Estos documentos quedarán vinculados al perfil de empresa. Mindy Partner los usará automáticamente al seleccionar esta empresa.</div>
+        <div class="drop-zone" id="co-sop-drop">
+          <input type="file" id="co-sop-input" multiple accept=".pdf,.txt,.md,.csv" onchange="handleCoSopFiles(this.files)" />
+          <p><strong>Arrastra SOPs y manuales</strong><br>o haz clic para seleccionar<br><span style="font-size:11px;opacity:0.5">PDF · TXT · MD — máx 10MB</span></p>
+        </div>
+        <div id="co-sop-list" style="margin-top:8px;display:flex;flex-direction:column;gap:5px"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- POWER SKILLS & TIPS -->
+    <div>
+      <div class="section-head">
+        <span class="section-title">Power skill y powertip</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-top:6px">
+        <div id="skill-partner-note" style="display:none" class="hint-box">
+          En modo Partner, carga el <b>framework completo</b> de Power Skills en el campo de texto o como documento PDF. Mindy lo usará como base de conocimiento global para orientar al usuario en cualquier tema.
+        </div>
+        <!-- MULTI SKILL + TIP -->
+        <div class="field">
+          <label>Power skills <span class="opt">(puedes elegir varias)</span></label>
+          <div style="display:flex;gap:6px">
+            <select id="skill-select" onchange="addSelectedSkill(this)" style="flex:1">
+              <option value="">— Agregar skill —</option>
+            </select>
+            <button class="btn-xs" onclick="toggleSkillForm()">+</button>
+          </div>
+        </div>
+        <div id="skill-add-form" class="add-form">
+          <div class="add-form-title">Nueva power skill</div>
+          <div class="field"><input type="text" id="new-skill-name" placeholder="Ej: Dar feedback efectivo" /></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-small btn-save-s" onclick="saveSkill()">Guardar</button>
+            <button class="btn-small btn-cancel-s" onclick="toggleSkillForm()">Cancelar</button>
+          </div>
+        </div>
+        <div id="skill-edit-list" style="margin-bottom:2px"></div>
+        <div id="selected-skills" style="display:flex;flex-wrap:wrap;gap:5px;min-height:20px"></div>
+
+        <div id="powertip-field" class="field" style="margin-top:4px">
+          <label>Powertips <span class="opt">(puedes elegir varios)</span></label>
+          <div style="display:flex;gap:6px">
+            <select id="tip-select" onchange="addSelectedTip(this)" style="flex:1">
+              <option value="">— Agregar powertip —</option>
+            </select>
+            <button class="btn-xs" onclick="toggleTipForm()">+</button>
+          </div>
+        </div>
+        <div id="tip-add-form" class="add-form">
+          <div class="add-form-title">Nuevo powertip</div>
+          <div class="field"><input type="text" id="new-tip-name" placeholder="Ej: Framework SBI" /></div>
+          <div class="field"><textarea id="new-tip-content" placeholder="Ej: SBI: Situación, Comportamiento, Impacto..." style="min-height:56px"></textarea></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-small btn-save-s" onclick="saveTip()">Guardar</button>
+            <button class="btn-small btn-cancel-s" onclick="toggleTipForm()">Cancelar</button>
+          </div>
+        </div>
+        <div id="tip-edit-list" style="margin-bottom:2px"></div>
+        <div id="selected-tips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:20px"></div>
+        <div id="skill-roleplay-fields" style="display:none"></div>
+        <div class="field" style="margin-top:4px"><label>Notas adicionales de skill/tip <span class="opt">(opcional)</span></label><textarea id="skill-text" placeholder="Contexto adicional sobre cómo aplicar las skills seleccionadas..." style="min-height:40px"></textarea></div>
+        <div style="display:none"><textarea id="tip-text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- KB FILES -->
+    <div>
+      <div class="section-head"><span class="section-title">Documentos KB <span class="opt" style="font-size:10px;color:#bbb;text-transform:none;letter-spacing:0">(opcional)</span></span></div>
+      <div class="drop-zone" id="drop-zone" style="margin-top:6px">
+        <input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.csv" onchange="handleFiles(this.files)" />
+        <p><strong>Arrastra archivos</strong> o haz clic<br><span style="font-size:11px;opacity:0.5">PDF · TXT · MD · CSV — máx 10MB</span></p>
+      </div>
+      <div class="file-list" id="file-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ══ COL 3: OUTPUT ══ -->
+  <div class="col" style="padding:20px 20px">
+    <div class="section-head"><span class="section-title">Prompts generados</span></div>
+    <div class="role-tabs" id="role-tabs">
       <button class="rtab active" onclick="switchTab('avatar',this)">Avatar</button>
       <button class="rtab" onclick="switchTab('evaluator',this)">Evaluador</button>
       <button class="rtab" onclick="switchTab('learner',this)">Learner</button>
@@ -361,7 +612,7 @@
     <div class="prompt-card">
       <div class="prompt-card-header">
         <div class="role-info">
-          <div class="role-dot" id="role-dot" style="background:#c8a96e"></div>
+          <div class="role-dot" id="role-dot" style="background:var(--accent)"></div>
           <div>
             <div class="role-name" id="role-name">Avatar</div>
             <div class="role-desc" id="role-desc">Mantiene el personaje durante la simulación</div>
@@ -371,446 +622,924 @@
       </div>
       <div class="prompt-body empty" id="prompt-display">Los prompts aparecerán aquí.
 
-1. Completa el escenario
-2. Selecciona o escribe los pathways
-3. Define los criterios de evaluación
-4. Carga tu KB (opcional)
-5. Presiona "Generar 4 prompts"</div>
+Completa los campos y presiona "Generar prompts".
+
+No todos los campos son obligatorios — solo el título del escenario es requerido. El resto enriquece los prompts.</div>
     </div>
   </div>
+
 </div>
 
 <script>
-// ── STATE ──
+// ══ STATE ══
 const prompts = { avatar:'', evaluator:'', learner:'', manager:'' };
 let activeRole = 'avatar';
-const uploadedFiles = [];
+let currentMode = 'roleplay';
+let difficulty = 'Básica';
+let resistance = 'Baja';
 let criteria = [];
+const uploadedFiles = [];
+const coSopFiles = []; // files attached to current company profile being edited
 
 const roleConfig = {
-  avatar:    { label:'Avatar',    desc:'Mantiene el personaje durante la simulación', color:'#c8a96e' },
-  evaluator: { label:'Evaluador', desc:'Evalúa conducta observable con la rúbrica',   color:'#8fb89a' },
-  learner:   { label:'Learner',   desc:'Entrega feedback desarrollador al aprendiz',   color:'#8faacc' },
-  manager:   { label:'Manager',   desc:'Genera reporte objetivo post-sesión',          color:'#b89a8f' }
+  avatar:    { label:'Avatar',    desc:'Encarna el personaje en la simulación',       color:'#b8924a' },
+  evaluator: { label:'Evaluador', desc:'Evalúa conducta con la rúbrica definida',     color:'#3a7d57' },
+  learner:   { label:'Learner',   desc:'Feedback desarrollador al aprendiz',          color:'#3a5f8a' },
+  manager:   { label:'Manager',   desc:'Reporte objetivo para manager / RRHH',        color:'#7a5f8a' }
 };
 
-// ── DEFAULT PATHWAY LIBRARY ──
+// ── DEFAULT DATA ──
 const defaultPathways = [
-  {
-    name: 'Feedback — Defensivo — General',
-    a: 'El avatar baja la guardia, reconoce el comportamiento específico con un ejemplo concreto, y se compromete a un cambio observable en la próxima reunión.',
-    b: 'El avatar escala la defensividad, cuestiona la percepción del líder, introduce contraejemplos, y cierra emocionalmente el diálogo.',
-    c: 'El avatar acepta superficialmente pero sin convicción real, no propone ningún cambio concreto, queda ambiguo.'
-  },
-  {
-    name: 'Feedback — Sensible — General',
-    a: 'El avatar procesa el feedback con vulnerabilidad, agradece la claridad, y propone un paso concreto para mejorar.',
-    b: 'El avatar se paraliza emocionalmente, interpreta el feedback como ataque personal, y se desconecta de la conversación.',
-    c: 'El avatar escucha pero no logra separar el comportamiento de su identidad, queda inseguro sin un plan claro.'
-  },
-  {
-    name: 'Desescalar conflicto — Reactivo',
-    a: 'El avatar baja la intensidad emocional al sentirse escuchado, colabora en buscar una solución compartida.',
-    b: 'El avatar interpreta la intervención como condescendiente, se activa más, lleva el conflicto al plano personal.',
-    c: 'El avatar se contiene pero no resuelve, el conflicto queda latente sin acuerdo real.'
-  },
-  {
-    name: 'Conversación difícil — Bajo desempeño',
-    a: 'El avatar comprende la brecha con evidencia específica, acepta el plan de desarrollo, se compromete a indicadores concretos.',
-    b: 'El avatar niega el bajo desempeño, atribuye el problema a factores externos, deslegitima la evaluación.',
-    c: 'El avatar acepta parcialmente, pide más tiempo sin comprometerse a métricas claras.'
-  },
-  {
-    name: 'Negociación — Resistencia al cambio',
-    a: 'El avatar ve el beneficio del cambio para su rol específico, propone una manera de implementarlo.',
-    b: 'El avatar activa resistencia activa, moviliza a otros colegas, convierte el tema en político.',
-    c: 'El avatar no resiste abiertamente pero tampoco adopta el cambio, espera que pase solo.'
-  },
-  {
-    name: 'Problem solving colaborativo',
-    a: 'El avatar contribuye con perspectiva complementaria, cocrea la solución, asume responsabilidad en la implementación.',
-    b: 'El avatar descalifica las ideas propuestas, no aporta alternativas, bloquea el avance.',
-    c: 'El avatar participa sin comprometerse, apoya verbalmente pero no en los hechos.'
-  }
+  { name:'Feedback — Defensivo — General', a:'El avatar baja la guardia, reconoce el comportamiento con ejemplo concreto, se compromete a un cambio observable.', b:'El avatar escala la defensividad, cuestiona la percepción, introduce contraejemplos, cierra emocionalmente el diálogo.', c:'Acepta superficialmente sin convicción, no propone cambio concreto.' },
+  { name:'Feedback — Sensible — General',  a:'Procesa el feedback con vulnerabilidad, agradece la claridad, propone un paso concreto.', b:'Se paraliza emocionalmente, interpreta como ataque personal, se desconecta.', c:'Escucha pero no logra separar comportamiento de identidad, queda inseguro.' },
+  { name:'Desescalar conflicto — Reactivo', a:'Baja la intensidad al sentirse escuchado, colabora en buscar solución compartida.', b:'Interpreta la intervención como condescendiente, se activa más, lleva el conflicto al plano personal.', c:'Se contiene pero el conflicto queda latente, sin acuerdo real.' },
+  { name:'Conversación difícil — Bajo desempeño', a:'Comprende la brecha con evidencia, acepta plan de desarrollo, se compromete a indicadores concretos.', b:'Niega el bajo desempeño, atribuye a factores externos, deslegitima la evaluación.', c:'Acepta parcialmente, pide más tiempo sin métricas claras.' },
+  { name:'Negociación — Resistencia al cambio', a:'Ve el beneficio para su rol, propone manera de implementarlo.', b:'Activa resistencia activa, moviliza colegas, convierte el tema en político.', c:'No resiste abiertamente pero tampoco adopta el cambio.' },
+  { name:'Problem solving colaborativo', a:'Contribuye con perspectiva complementaria, cocrea la solución, asume responsabilidad.', b:'Descalifica las ideas, no aporta alternativas, bloquea el avance.', c:'Participa sin comprometerse, apoya verbalmente pero no en los hechos.' }
 ];
 
-// ── DEFAULT CRITERIA ──
-const defaultCriteria = [
-  { name: 'Conducta observable nombrada (sin juicio de persona)', weight: 30 },
-  { name: 'Escucha activa y manejo de la emocionalidad', weight: 25 },
-  { name: 'Cierre con acuerdo o próximo paso concreto', weight: 25 },
-  { name: 'Tono y lenguaje apropiados al contexto', weight: 20 }
+const defaultArchetypes = [
+  { name:'Defensivo — General', role:'Colaborador', emotion:'Guardado, mildly irritable', pattern:'Justifica sus acciones, minimiza el impacto, introduce contraejemplos, explica su intención.', concerns:'Que lo perciban como incompetente o problemático.', tension:'Sabe que hay algo de verdad en el feedback pero no quiere admitirlo.' },
+  { name:'Sensible — General',  role:'Colaborador', emotion:'Ansioso, vulnerable', pattern:'Toma el feedback de forma personal, puede desanimarse o emocionarse visiblemente.', concerns:'No ser suficientemente bueno, decepcionar al equipo.', tension:'Quiere mejorar pero el feedback le activa vergüenza.' },
+  { name:'Cínico — General',    role:'Colaborador senior', emotion:'Escéptico, distante', pattern:'Cuestiona la legitimidad y fairness del feedback, busca inconsistencias.', concerns:'Que el sistema sea injusto, que no se reconozca su experiencia.', tension:'Ha visto procesos de feedback fallidos antes y no cree en ellos.' }
 ];
+
+const defaultSkills = ['Dar feedback efectivo','Desescalar conflictos','Conversaciones difíciles','Liderazgo situacional','Negociación colaborativa','Coaching de desempeño','Problem solving en equipo'];
+const defaultTips = [
+  { name:'Framework SBI', content:'SBI — Situación (cuándo/dónde ocurrió), Comportamiento (qué hizo exactamente, observable), Impacto (qué efecto tuvo en el equipo/resultado). Terminar siempre con pregunta abierta.' },
+  { name:'Escucha activa — 3 niveles', content:'Nivel 1: escuchar hechos. Nivel 2: escuchar emociones. Nivel 3: escuchar lo que no se dice. Parafrasear antes de responder.' },
+  { name:'Desescalar — DEAR MAN', content:'Describir, Expresar, Afirmar, Reforzar. Mantener calma, Aparecer seguro, Negociar.' }
+];
+
+const defaultCriteria = [
+  { name:'Conducta observable nombrada (sin juicio de persona)', weight:30 },
+  { name:'Escucha activa y manejo de la emocionalidad', weight:25 },
+  { name:'Cierre con acuerdo o próximo paso concreto', weight:25 },
+  { name:'Tono y lenguaje apropiados al contexto', weight:20 }
+];
+
+// ── LS HELPERS ──
+const ls = { get: k => { try { return JSON.parse(localStorage.getItem(k)||'[]'); } catch { return []; } }, set: (k, val) => localStorage.setItem(k, JSON.stringify(val)) };
 
 // ── INIT ──
-function init() {
+document.addEventListener('DOMContentLoaded', () => {
   loadKey();
-  populatePathwayDropdown();
   criteria = defaultCriteria.map(c => ({...c}));
   renderCriteria();
-  loadSavedPathways();
+  populateAll();
+  populateCompanyProfilesWithActions();
+  refreshAllEditLists();
+  setMode('roleplay');
+  initGuardrails();
+  setIntroPreset('roleplay');
+  // co-sop drop
+  const coDz = document.getElementById('co-sop-drop');
+  if(coDz){ coDz.addEventListener('dragover',e=>{e.preventDefault();coDz.classList.add('drag-over');}); coDz.addEventListener('dragleave',()=>coDz.classList.remove('drag-over')); coDz.addEventListener('drop',e=>{e.preventDefault();coDz.classList.remove('drag-over');handleCoSopFiles(e.dataTransfer.files);}); }
+  // drag/drop
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+});
+
+function populateAll() {
+  populatePathways(); populateArchetypes(); populateSkills(); populateTips();
+  populateCompanyProfiles(); populateScenarioProfiles();
+  populateActiveCompanySelect();
+  refreshAllEditLists();
 }
 
-function populatePathwayDropdown() {
-  const sel = document.getElementById('pathway-select');
-  // Clear all but first
-  while (sel.options.length > 1) sel.remove(1);
-
-  const saved = getSavedPathways();
-  if (saved.length > 0) {
-    const og = document.createElement('optgroup');
-    og.label = 'Mis pathways guardados';
-    saved.forEach((pw, i) => {
-      const opt = document.createElement('option');
-      opt.value = 'saved_' + i;
-      opt.textContent = pw.name;
-      og.appendChild(opt);
-    });
-    sel.appendChild(og);
-  }
-
-  const og2 = document.createElement('optgroup');
-  og2.label = 'Biblioteca 100 Minds';
-  defaultPathways.forEach((pw, i) => {
-    const opt = document.createElement('option');
-    opt.value = 'default_' + i;
-    opt.textContent = pw.name;
-    og2.appendChild(opt);
+function populateActiveCompanySelect() {
+  const sel = document.getElementById('active-company-select');
+  const current = sel.value;
+  while(sel.options.length > 1) sel.remove(1);
+  ls.get('mindy_companies').forEach((c,i) => {
+    const o = document.createElement('option'); o.value = i; o.textContent = c.name||'(sin nombre)'; sel.appendChild(o);
   });
-  sel.appendChild(og2);
+  if(current) sel.value = current;
 }
 
-function loadPathway(val) {
-  if (!val) { document.getElementById('pathway-preview').classList.remove('visible'); return; }
-  let pw;
-  if (val.startsWith('default_')) pw = defaultPathways[parseInt(val.split('_')[1])];
-  else { const saved = getSavedPathways(); pw = saved[parseInt(val.split('_')[1])]; }
-  if (!pw) return;
-
-  document.getElementById('path-a').value = pw.a;
-  document.getElementById('path-b').value = pw.b;
-  document.getElementById('path-c').value = pw.c || '';
-
-  const preview = document.getElementById('pathway-preview');
-  preview.classList.add('visible');
-  preview.innerHTML = `
-    <div class="pw-row"><span class="pw-label">Pathway A — bien</span><span class="pw-val pw-a">${pw.a}</span></div>
-    <div class="pw-row"><span class="pw-label">Pathway B — mal</span><span class="pw-val pw-b">${pw.b}</span></div>
-    ${pw.c ? `<div class="pw-row"><span class="pw-label">Pathway C — regular</span><span class="pw-val">${pw.c}</span></div>` : ''}
-  `;
+function activateCompany(idx) {
+  const badge = document.getElementById('active-company-badge');
+  if(idx === '' || idx === null || idx === undefined || idx === '-1') {
+    if(badge) badge.style.display='none';
+    renderPartnerDocs([]);
+    return;
+  }
+  const companies = ls.get('mindy_companies');
+  const i = parseInt(idx);
+  const c = companies[i];
+  if(!c) { if(badge) badge.style.display='none'; return; }
+  // Fill company form fields
+  sv('co-name', c.name||''); sv('co-industry', c.industry||'');
+  sv('co-purpose', c.purpose||''); sv('co-values', c.values||'');
+  sv('co-leadership', c.leadership||''); sv('co-challenges', c.challenges||'');
+  sv('co-comm-style', c.commStyle||''); sv('co-jargon', c.jargon||'');
+  sv('co-avoid', c.avoid||''); sv('co-notes', c.notes||'');
+  if(badge) {
+    badge.style.display = 'block';
+    badge.innerHTML = '<b>' + (c.name||'Empresa') + '</b>' + (c.industry ? ' · ' + c.industry : '') +
+      (c.purpose ? '<br><span style="color:var(--muted);font-size:11px">' + c.purpose.substring(0,90) + (c.purpose.length>90?'...':'') + '</span>' : '');
+  }
+  // Restore file content from sessionStorage
+  const docs = (c.sopFiles || []).map(f => {
+    try {
+      const stored = sessionStorage.getItem('mindy_file_' + f.name);
+      if(stored) { const d = JSON.parse(stored); return {...f, content:d.content, mediaType:d.mediaType}; }
+    } catch(e) {}
+    return f;
+  });
+  // Always show partner docs block regardless of current mode
+  const pdb = document.getElementById('partner-docs-block');
+  if(pdb) pdb.style.display = '';
+  renderPartnerDocs(docs);
+  uploadedFiles.length = 0;
+  docs.forEach(f => uploadedFiles.push(f));
 }
 
-function toggleAddForm() {
-  const form = document.getElementById('add-pathway-form');
-  form.classList.toggle('visible');
+function renderPartnerDocs(docs) {
+  const el = document.getElementById('partner-docs-list');
+  if(!el) return;
+  if(!docs || docs.length === 0) {
+    el.innerHTML = '<div style="padding:10px;background:var(--surface2);border-radius:var(--radius);color:var(--muted);font-size:12px">No hay SOPs vinculados a esta empresa.<br>Ve al perfil de empresa (columna del centro) y carga los documentos.</div>';
+    return;
+  }
+  el.innerHTML = docs.map(f =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--surface);border:1px solid var(--border);border-radius:7px">
+      <div class="file-icon ${f.ext==='pdf'?'pdf':'txt'}">${(f.ext||'?').toUpperCase()}</div>
+      <div class="file-meta"><div class="file-name">${f.name}</div><div class="file-size">${fmtSize(f.size||0)} ${f.content?'<span style="color:var(--accent2);font-size:10px">✓ listo</span>':'<span style="color:var(--muted);font-size:10px">solo metadatos</span>'}</div></div>
+    </div>`
+  ).join('') + (docs.some(f=>!f.content) ? '<div style="font-size:11px;color:var(--muted);margin-top:6px;padding:6px 9px">Recarga la página y sube los archivos de nuevo para que el contenido esté disponible en esta sesión.</div>' : '');
 }
 
-function getSavedPathways() {
-  try { return JSON.parse(localStorage.getItem('mindy_pathways') || '[]'); } catch { return []; }
+function renderSopKbList(files) {
+  const el = document.getElementById('sop-kb-list');
+  if(el) el.innerHTML = '';
 }
 
+// SOPs attached to company profile being built
+function handleCoSopFiles(fileList) {
+  Array.from(fileList).forEach(file => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if(!['pdf','txt','md','csv'].includes(ext)) return;
+    if(file.size > 10*1024*1024) { alert(file.name + ' es muy grande.'); return; }
+    if(coSopFiles.find(f=>f.name===file.name)) return;
+    const reader = new FileReader();
+    if(ext === 'pdf') {
+      reader.onload = e => { coSopFiles.push({name:file.name, size:file.size, ext, category:'manual', content:e.target.result.split(',')[1], mediaType:'application/pdf'}); renderCoSopList(); };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = e => { coSopFiles.push({name:file.name, size:file.size, ext, category:'manual', content:e.target.result, mediaType:'text/plain'}); renderCoSopList(); };
+      reader.readAsText(file);
+    }
+  });
+  document.getElementById('co-sop-input').value = '';
+}
 
+function renderCoSopList() {
+  const list = document.getElementById('co-sop-list'); if(!list) return;
+  list.innerHTML = coSopFiles.map((f,i) =>
+    `<div class="file-item">
+      <div class="file-icon ${f.ext==='pdf'?'pdf':'txt'}">${f.ext.toUpperCase()}</div>
+      <div class="file-meta"><div class="file-name">${f.name}</div><div class="file-size">${fmtSize(f.size)}</div></div>
+      <button class="btn-rm" onclick="coSopFiles.splice(${i},1);renderCoSopList()">×</button>
+    </div>`
+  ).join('');
+}
+
+// ── API KEY ──
 function saveKey() {
   const k = document.getElementById('api-key').value.trim();
   if (!k || !k.startsWith('sk-')) { alert('La key debe empezar con sk-ant-'); return; }
   localStorage.setItem('mindy_api_key', k);
-  document.getElementById('api-key-status').textContent = '✓ guardada';
-  document.getElementById('api-key').type = 'password';
+  document.getElementById('api-dot').classList.add('ok');
+  document.getElementById('api-label').textContent = '✓ API key guardada';
 }
-
 function loadKey() {
   const k = localStorage.getItem('mindy_api_key');
-  if (k) {
-    document.getElementById('api-key').value = k;
-    document.getElementById('api-key-status').textContent = '✓ guardada';
+  if (k) { document.getElementById('api-key').value = k; document.getElementById('api-dot').classList.add('ok'); document.getElementById('api-label').textContent = '✓ API key guardada'; }
+}
+
+// ── MODE ──
+const modeHints = {
+  roleplay: '<div class="hint-box">Modo <b>Role-play</b>: simulación conversacional con avatar, branching de pathways y evaluación con rúbrica.</div>',
+  partner:  '<div class="hint-box">Modo <b>Partner / Coaching</b>: acompañamiento, preparación de conversaciones reales. Sin evaluación formal — el avatar actúa como sparring o coach.</div>',
+  sop:      '<div class="hint-box">Modo <b>Guía SOPs</b>: el avatar responde preguntas sobre manuales, procedimientos y políticas cargados en la KB. No hay juego de rol.</div>'
+};
+function setMode(mode) {
+  currentMode = mode;
+  ['roleplay','partner'].forEach(m => {
+    const el = document.getElementById('tab-'+m);
+    if(el) el.classList.toggle('active', m===mode);
+  });
+  document.getElementById('mode-hint').innerHTML = modeHints[mode]||'';
+
+  const isPartner = mode === 'partner';
+  const isRoleplay = mode === 'roleplay';
+
+  // Show/hide sections
+  document.getElementById('pathways-section').style.display  = isRoleplay ? '' : 'none';
+  document.getElementById('scoring-section').style.display   = isPartner  ? 'none' : '';
+  document.getElementById('archetype-section').style.display = isPartner  ? 'none' : '';
+  document.getElementById('diff-section').style.display      = isPartner  ? 'none' : '';
+  document.getElementById('sop-kb-section').style.display    = 'none';
+  document.getElementById('powertip-field').style.display    = isPartner  ? 'none' : '';
+
+  // Scenario section
+  // Hide entire scenario block in partner
+  document.getElementById('scenario-block').style.display = isPartner ? 'none' : '';
+  document.getElementById('scenario-partner-note').style.display    = isPartner ? '' : 'none';
+  document.getElementById('scenario-roleplay-fields').style.display = isPartner ? 'none' : '';
+
+  document.getElementById('scenario-title-label').textContent  = isPartner ? 'Nombre de la sesión (opcional)' : 'Título del escenario';
+  document.getElementById('scenario-title').placeholder         = isPartner ? 'Ej: Sesión libre — el usuario decide el tema' : 'Ej: Feedback a colaborador que interrumpe en reuniones';
+  document.getElementById('objective-label').textContent        = isPartner ? 'Objetivo de Mindy On Demand' : 'Objetivo de aprendizaje';
+
+  // Skill section
+  document.getElementById('skill-partner-note').style.display = isPartner ? '' : 'none';
+  document.getElementById('powertip-field').style.display = isPartner ? 'none' : '';
+  // Hide save scenario button in partner
+  const saveScenBtn = document.querySelector('[onclick="toggleScenarioForm()"]');
+  if(saveScenBtn) saveScenBtn.style.display = isPartner ? 'none' : '';
+  // Partner docs block
+  const pdb = document.getElementById('partner-docs-block');
+  if(pdb) pdb.style.display = isPartner ? '' : 'none';
+  // Swap intro preset to match mode
+  const currentIntro = document.getElementById('session-intro').value;
+  const presetKeys = Object.values(introPresets);
+  if(presetKeys.includes(currentIntro) || currentIntro === '') {
+    setIntroPreset(isPartner ? 'partner' : 'roleplay');
   }
+
+  // Update role tabs
+  const tabs = document.getElementById('role-tabs');
+  tabs.innerHTML = '';
+  const roles = mode === 'partner' ? ['avatar','learner'] : ['avatar','evaluator','learner','manager'];
+  roles.forEach((r,i) => {
+    const b = document.createElement('button');
+    b.className = 'rtab' + (i===0?' active':'');
+    b.textContent = roleConfig[r].label;
+    b.onclick = () => switchTab(r, b);
+    tabs.appendChild(b);
+  });
+  switchTab(roles[0], tabs.firstChild);
 }
 
-function savePathway() {
-  const name = document.getElementById('new-pw-name').value.trim();
-  const a    = document.getElementById('new-pw-a').value.trim();
-  const b    = document.getElementById('new-pw-b').value.trim();
-  const c    = document.getElementById('new-pw-c').value.trim();
-  if (!name || !a || !b) { alert('Completa al menos nombre, Pathway A y Pathway B.'); return; }
-  const saved = getSavedPathways();
-  saved.unshift({ name, a, b, c });
-  localStorage.setItem('mindy_pathways', JSON.stringify(saved));
-  document.getElementById('new-pw-name').value = '';
-  document.getElementById('new-pw-a').value = '';
-  document.getElementById('new-pw-b').value = '';
-  document.getElementById('new-pw-c').value = '';
-  toggleAddForm();
-  populatePathwayDropdown();
-  // Auto-select the newly saved one
+// ── DIFFICULTY / RESISTANCE ──
+function setDiff(btn, val) { document.querySelectorAll('.diff-btns:nth-of-type(1) .diff-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); difficulty=val; document.getElementById('scenario-difficulty').value=val; }
+function setResist(btn, val) { btn.closest('.diff-btns').querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); resistance=val; document.getElementById('scenario-resistance').value=val; }
+
+// ── SCENARIO PROFILES ──
+function populateScenarioProfiles() {
+  const sel = document.getElementById('scenario-profile-select');
+  while(sel.options.length>1) sel.remove(1);
+  ls.get('mindy_scenarios').forEach((s,i) => { const o=document.createElement('option'); o.value=i; o.textContent=s.saveName; sel.appendChild(o); });
+}
+function toggleScenarioForm() { document.getElementById('save-scenario-form').classList.toggle('visible'); }
+function saveScenarioProfile() {
+  const name = document.getElementById('scenario-save-name').value.trim();
+  if(!name) return;
+  const profile = { saveName:name, title:v('scenario-title'), objective:v('scenario-objective'), relation:v('scenario-relation'), tone:v('scenario-tone'), trigger:v('scenario-trigger'), stakes:v('scenario-stakes'), difficulty, resistance };
+  const saved = ls.get('mindy_scenarios'); saved.unshift(profile); ls.set('mindy_scenarios', saved);
+  document.getElementById('scenario-save-name').value='';
+  toggleScenarioForm(); populateScenarioProfiles();
+}
+function loadScenarioProfile(idx) {
+  if(!idx && idx!==0) return;
+  const p = ls.get('mindy_scenarios')[idx]; if(!p) return;
+  sv('scenario-title',p.title); sv('scenario-objective',p.objective); sv('scenario-relation',p.relation); sv('scenario-tone',p.tone); sv('scenario-trigger',p.trigger); sv('scenario-stakes',p.stakes);
+}
+function deleteScenarioProfile() {
+  const sel = document.getElementById('scenario-profile-select'); if(!sel.value) return;
+  const saved = ls.get('mindy_scenarios'); saved.splice(parseInt(sel.value),1); ls.set('mindy_scenarios',saved); populateScenarioProfiles();
+}
+
+// ── COMPANY PROFILES ──
+function populateCompanyProfiles() {
+  const sel = document.getElementById('company-profile-select');
+  while(sel.options.length>1) sel.remove(1);
+  ls.get('mindy_companies').forEach((c,i) => { const o=document.createElement('option'); o.value=i; o.textContent=c.name||'(sin nombre)'; sel.appendChild(o); });
+}
+function saveCompanyProfile() {
+  console.log('saveCompanyProfile called');
+  const profile = { name:v('co-name'), industry:v('co-industry'), purpose:v('co-purpose'), values:v('co-values'), leadership:v('co-leadership'), challenges:v('co-challenges'), commStyle:v('co-comm-style'), jargon:v('co-jargon'), avoid:v('co-avoid'), notes:v('co-notes'), sopFiles: [...coSopFiles] };
+  console.log('profile name:', profile.name);
+  if(!profile.name) { alert('Agrega el nombre de la empresa primero.'); return; }
+  // Strip file content before saving to localStorage (too large)
+  const profileForStorage = {...profile, sopFiles: (profile.sopFiles||[]).map(f => ({name:f.name, size:f.size, ext:f.ext, category:f.category, mediaType:f.mediaType}))};
+  const saved = ls.get('mindy_companies'); saved.unshift(profileForStorage); ls.set('mindy_companies',saved);
+  // Store actual file content in sessionStorage keyed by filename
+  (profile.sopFiles||[]).forEach(f => { try { sessionStorage.setItem('mindy_file_'+f.name, JSON.stringify({content:f.content, mediaType:f.mediaType})); } catch(e) { console.warn('Could not store file content:', f.name); } });
+  console.log('saved companies:', ls.get('mindy_companies').length);
+  alert('Empresa "' + profile.name + '" guardada. Total empresas: ' + ls.get('mindy_companies').length);
+  populateCompanyProfiles();
+  populateActiveCompanySelect();
+  populateCompanyProfilesWithActions();
+  // Auto-select the just-saved company
+  document.getElementById('active-company-select').value = '0';
+  activateCompany('0');
+  coSopFiles.length = 0; renderCoSopList();
+  setStatus('Perfil de empresa guardado y activado.','ok');
+}
+function loadCompanyProfile(idx) {
+  if(!idx && idx!==0) return;
+  const p = ls.get('mindy_companies')[parseInt(idx)]; if(!p) return;
+  sv('co-name',p.name); sv('co-industry',p.industry); sv('co-purpose',p.purpose); sv('co-values',p.values); sv('co-leadership',p.leadership); sv('co-challenges',p.challenges); sv('co-comm-style',p.commStyle); sv('co-jargon',p.jargon); sv('co-avoid',p.avoid); sv('co-notes',p.notes);
+}
+function deleteCompanyProfile() {
+  const sel = document.getElementById('company-profile-select'); if(!sel.value) return;
+  const saved = ls.get('mindy_companies'); saved.splice(parseInt(sel.value),1); ls.set('mindy_companies',saved); populateCompanyProfiles();
+}
+
+// ── ARCHETYPES ──
+function populateArchetypes() {
+  const sel = document.getElementById('archetype-select');
+  while(sel.options.length>1) sel.remove(1);
+  const saved = ls.get('mindy_archetypes');
+  if(saved.length) { const og=document.createElement('optgroup'); og.label='Mis arquetipos'; saved.forEach((a,i)=>{ const o=document.createElement('option'); o.value='s'+i; o.textContent=a.name; og.appendChild(o); }); sel.appendChild(og); }
+  const og2=document.createElement('optgroup'); og2.label='Biblioteca 100 Minds';
+  defaultArchetypes.forEach((a,i)=>{ const o=document.createElement('option'); o.value='d'+i; o.textContent=a.name; og2.appendChild(o); });
+  sel.appendChild(og2);
+}
+function loadArchetype(val) {
+  if(!val) { document.getElementById('archetype-preview').style.display='none'; return; }
+  const a = val.startsWith('d') ? defaultArchetypes[parseInt(val.slice(1))] : ls.get('mindy_archetypes')[parseInt(val.slice(1))];
+  if(!a) return;
+  const prev = document.getElementById('archetype-preview');
+  prev.style.display='block';
+  prev.innerHTML=`<div style="display:flex;flex-direction:column;gap:5px">
+    ${a.role?`<div><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Rol</span><div style="font-size:12px">${a.role}</div></div>`:''}
+    ${a.emotion?`<div><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Estado emocional</span><div style="font-size:12px">${a.emotion}</div></div>`:''}
+    ${a.pattern?`<div><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Patrón</span><div style="font-size:12px">${a.pattern}</div></div>`:''}
+    ${a.concerns?`<div><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Preocupaciones</span><div style="font-size:12px">${a.concerns}</div></div>`:''}
+    ${a.tension?`<div><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Tensión oculta</span><div style="font-size:12px;color:var(--danger)">${a.tension}</div></div>`:''}
+  </div>`;
+}
+function toggleArchetypeForm() { document.getElementById('archetype-form').classList.toggle('visible'); }
+function saveArchetype() {
+  const name=v('new-arch-name'); if(!name) return;
+  const a = { name, role:v('new-arch-role'), emotion:v('new-arch-emotion'), pattern:v('new-arch-pattern'), concerns:v('new-arch-concerns'), tension:v('new-arch-tension') };
+  const saved=ls.get('mindy_archetypes'); saved.unshift(a); ls.set('mindy_archetypes',saved);
+  ['new-arch-name','new-arch-role','new-arch-emotion','new-arch-pattern','new-arch-concerns','new-arch-tension'].forEach(id=>sv(id,''));
+  toggleArchetypeForm(); populateArchetypes(); refreshAllEditLists();
+  document.getElementById('archetype-select').value='s0'; loadArchetype('s0');
+}
+
+// ── PATHWAYS ──
+function populatePathways() {
   const sel = document.getElementById('pathway-select');
-  sel.value = 'saved_0';
-  loadPathway('saved_0');
+  while(sel.options.length>1) sel.remove(1);
+  const saved=ls.get('mindy_pathways');
+  if(saved.length){ const og=document.createElement('optgroup'); og.label='Mis pathways'; saved.forEach((p,i)=>{ const o=document.createElement('option'); o.value='s'+i; o.textContent=p.name; og.appendChild(o); }); sel.appendChild(og); }
+  const og2=document.createElement('optgroup'); og2.label='Biblioteca 100 Minds';
+  defaultPathways.forEach((p,i)=>{ const o=document.createElement('option'); o.value='d'+i; o.textContent=p.name; og2.appendChild(o); });
+  sel.appendChild(og2);
+}
+function loadPathway(val) {
+  if(!val){ document.getElementById('pathway-preview').classList.remove('visible'); return; }
+  const pw = val.startsWith('d') ? defaultPathways[parseInt(val.slice(1))] : ls.get('mindy_pathways')[parseInt(val.slice(1))];
+  if(!pw) return;
+  sv('path-a',pw.a); sv('path-b',pw.b); sv('path-c',pw.c||'');
+  const prev=document.getElementById('pathway-preview'); prev.classList.add('visible');
+  prev.innerHTML=`<div class="pw-row"><span class="pw-label">A — bien</span><span class="pw-a">${pw.a}</span></div><div class="pw-row"><span class="pw-label">B — mal</span><span class="pw-b">${pw.b}</span></div>${pw.c?`<div class="pw-row"><span class="pw-label">C — regular</span><span>${pw.c}</span></div>`:''}`;
+}
+function togglePathwayForm(){ document.getElementById('pathway-form').classList.toggle('visible'); }
+function savePathway(){
+  const name=v('new-pw-name'),a=v('new-pw-a'),b=v('new-pw-b'); if(!name||!a||!b) return;
+  const saved=ls.get('mindy_pathways'); saved.unshift({name,a,b,c:v('new-pw-c')}); ls.set('mindy_pathways',saved);
+  ['new-pw-name','new-pw-a','new-pw-b','new-pw-c'].forEach(id=>sv(id,''));
+  togglePathwayForm(); populatePathways(); refreshAllEditLists();
+  document.getElementById('pathway-select').value='s0'; loadPathway('s0');
 }
 
-function loadSavedPathways() { populatePathwayDropdown(); }
+// ── SKILLS & TIPS ──
+function populateSkills(){
+  const sel=document.getElementById('skill-select'); while(sel.options.length>1) sel.remove(1);
+  const saved=ls.get('mindy_skills');
+  if(saved.length){ const og=document.createElement('optgroup'); og.label='Mis skills'; saved.forEach((s,i)=>{ const o=document.createElement('option'); o.value='s'+i; o.textContent=s; og.appendChild(o); }); sel.appendChild(og); }
+  const og2=document.createElement('optgroup'); og2.label='Biblioteca 100 Minds';
+  defaultSkills.forEach((s,i)=>{ const o=document.createElement('option'); o.value='d'+i; o.textContent=s; og2.appendChild(o); });
+  sel.appendChild(og2);
+}
+function loadSkill(val){
+  if(!val) return;
+  const s = val.startsWith('d') ? defaultSkills[parseInt(val.slice(1))] : ls.get('mindy_skills')[parseInt(val.slice(1))];
+  sv('skill-text', s||'');
+}
+function toggleSkillForm(){ document.getElementById('skill-add-form').classList.toggle('visible'); }
+function saveSkill(){ const name=v('new-skill-name'); if(!name) return; const saved=ls.get('mindy_skills'); saved.unshift(name); ls.set('mindy_skills',saved); sv('new-skill-name',''); toggleSkillForm(); populateSkills(); }
+
+function populateTips(){
+  const sel=document.getElementById('tip-select'); while(sel.options.length>1) sel.remove(1);
+  const saved=ls.get('mindy_tips');
+  if(saved.length){ const og=document.createElement('optgroup'); og.label='Mis powertips'; saved.forEach((t,i)=>{ const o=document.createElement('option'); o.value='s'+i; o.textContent=t.name; og.appendChild(o); }); sel.appendChild(og); }
+  const og2=document.createElement('optgroup'); og2.label='Biblioteca 100 Minds';
+  defaultTips.forEach((t,i)=>{ const o=document.createElement('option'); o.value='d'+i; o.textContent=t.name; og2.appendChild(o); });
+  sel.appendChild(og2);
+}
+function loadTip(val){
+  if(!val) return;
+  const t = val.startsWith('d') ? defaultTips[parseInt(val.slice(1))] : ls.get('mindy_tips')[parseInt(val.slice(1))];
+  sv('tip-text', t?.content||t||'');
+}
+function toggleTipForm(){ document.getElementById('tip-add-form').classList.toggle('visible'); }
+function saveTip(){ const name=v('new-tip-name'),content=v('new-tip-content'); if(!name||!content) return; const saved=ls.get('mindy_tips'); saved.unshift({name,content}); ls.set('mindy_tips',saved); sv('new-tip-name',''); sv('new-tip-content',''); toggleTipForm(); populateTips(); }
 
 // ── SCORING ──
-function addCriterion(name = '', weight = 20) {
-  criteria.push({ name, weight });
-  renderCriteria();
-}
-
-function removeCriterion(i) {
-  criteria.splice(i, 1);
-  renderCriteria();
-}
-
-function renderCriteria() {
-  const list = document.getElementById('criteria-list');
-  list.innerHTML = '';
-  criteria.forEach((c, i) => {
-    const row = document.createElement('div');
-    row.className = 'criterion-row';
-    row.innerHTML = `
-      <input type="text" value="${c.name}" placeholder="Ej: Nombra conducta observable"
-        oninput="criteria[${i}].name = this.value" />
-      <input type="number" min="0" max="100" value="${c.weight}"
-        oninput="criteria[${i}].weight = parseInt(this.value)||0; updateWeightTotal()" />
-      <button class="btn-remove-c" onclick="removeCriterion(${i})">×</button>
-    `;
+function addCriterion(name='',weight=20){ criteria.push({name,weight}); renderCriteria(); }
+function removeCriterion(i){ criteria.splice(i,1); renderCriteria(); }
+function renderCriteria(){
+  const list=document.getElementById('criteria-list'); list.innerHTML='';
+  criteria.forEach((c,i)=>{
+    const row=document.createElement('div'); row.className='criterion-row';
+    row.innerHTML=`<input type="text" value="${c.name}" placeholder="Conducta observable" oninput="criteria[${i}].name=this.value"/>
+      <input type="number" min="0" max="100" value="${c.weight}" oninput="criteria[${i}].weight=parseInt(this.value)||0;updateWT()"/>
+      <button class="btn-rc" onclick="removeCriterion(${i})">×</button>`;
     list.appendChild(row);
   });
-  updateWeightTotal();
+  updateWT();
 }
-
-function updateWeightTotal() {
-  const total = criteria.reduce((s, c) => s + (parseInt(c.weight) || 0), 0);
-  const el = document.getElementById('weight-total');
-  el.textContent = `Total: ${total}%`;
-  el.className = 'weight-total ' + (total === 100 ? 'ok' : 'warn');
+function updateWT(){
+  const total=criteria.reduce((s,c)=>s+(parseInt(c.weight)||0),0);
+  const el=document.getElementById('weight-total');
+  el.textContent=`Total: ${total}%`;
+  el.className='weight-total '+(total===100?'weight-ok':'weight-warn');
 }
-
-function updateScoringBadge() {
-  const mode = document.getElementById('mode').value;
-  const badge = document.getElementById('mode-badge');
-  badge.textContent = mode;
-  badge.className = 'mode-badge ' + mode.toLowerCase().replace('á','a').replace('é','e');
-}
-
-// ── ARCHETYPE CUSTOM ──
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('archetype').addEventListener('change', function() {
-    document.getElementById('archetype-custom-field').style.display =
-      this.value === 'custom' ? 'flex' : 'none';
-  });
-  init();
-});
 
 // ── FILE UPLOAD ──
-const dz = document.getElementById('drop-zone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
-
-function handleFiles(fileList) {
-  Array.from(fileList).forEach(file => {
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (!['pdf','txt','md','csv'].includes(ext)) { alert(`Formato no soportado: .${ext}`); return; }
-    if (file.size > 10*1024*1024) { alert(`${file.name} es muy grande (máx 10MB).`); return; }
-    if (uploadedFiles.find(f => f.name === file.name)) return;
-    const reader = new FileReader();
-    const cat = guessCategory(file.name);
-    if (ext === 'pdf') {
-      reader.onload = e => { uploadedFiles.push({ name:file.name, size:file.size, ext, category:cat, content:e.target.result.split(',')[1], mediaType:'application/pdf' }); renderFileList(); };
+function handleFiles(fileList){
+  Array.from(fileList).forEach(file=>{
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(!['pdf','txt','md','csv'].includes(ext)){ alert(`Formato no soportado: .${ext}`); return; }
+    if(file.size>10*1024*1024){ alert(`${file.name} es muy grande.`); return; }
+    if(uploadedFiles.find(f=>f.name===file.name)) return;
+    const reader=new FileReader();
+    const cat=guessCategory(file.name);
+    if(ext==='pdf'){
+      reader.onload=e=>{ uploadedFiles.push({name:file.name,size:file.size,ext,category:cat,content:e.target.result.split(',')[1],mediaType:'application/pdf'}); renderFiles(); };
       reader.readAsDataURL(file);
     } else {
-      reader.onload = e => { uploadedFiles.push({ name:file.name, size:file.size, ext, category:cat, content:e.target.result, mediaType:'text/plain' }); renderFileList(); };
+      reader.onload=e=>{ uploadedFiles.push({name:file.name,size:file.size,ext,category:cat,content:e.target.result,mediaType:'text/plain'}); renderFiles(); };
       reader.readAsText(file);
     }
   });
-  document.getElementById('file-input').value = '';
+  document.getElementById('file-input').value='';
 }
-
-function guessCategory(name) {
-  const n = name.toLowerCase();
-  if (n.includes('power') || n.includes('skill') || n.includes('framework') || n.includes('compet')) return 'powerskill';
-  if (n.includes('manual') || n.includes('sop') || n.includes('protocol') || n.includes('politica') || n.includes('policy') || n.includes('procedim')) return 'manual';
-  return 'company';
-}
-
-function fmtSize(b) { return b < 1024 ? b+'B' : b < 1024*1024 ? (b/1024).toFixed(0)+'KB' : (b/1024/1024).toFixed(1)+'MB'; }
-
-function renderFileList() {
-  const list = document.getElementById('file-list');
-  list.innerHTML = '';
-  uploadedFiles.forEach((f, i) => {
-    const item = document.createElement('div');
-    item.className = 'file-item';
-    item.innerHTML = `
-      <div class="file-icon ${f.ext === 'pdf' ? 'pdf' : 'txt'}">${f.ext.toUpperCase()}</div>
-      <div class="file-meta">
-        <div class="file-name" title="${f.name}">${f.name}</div>
-        <div class="file-size">${fmtSize(f.size)}</div>
-      </div>
-      <select class="file-category" onchange="uploadedFiles[${i}].category=this.value">
+function guessCategory(name){ const n=name.toLowerCase(); if(n.includes('power')||n.includes('skill')||n.includes('framework')) return 'powerskill'; if(n.includes('manual')||n.includes('sop')||n.includes('protocol')||n.includes('policy')) return 'manual'; return 'company'; }
+function fmtSize(b){ return b<1024?b+'B':b<1024*1024?(b/1024).toFixed(0)+'KB':(b/1024/1024).toFixed(1)+'MB'; }
+function renderFiles(){
+  const list=document.getElementById('file-list'); list.innerHTML='';
+  uploadedFiles.forEach((f,i)=>{
+    const item=document.createElement('div'); item.className='file-item';
+    item.innerHTML=`<div class="file-icon ${f.ext==='pdf'?'pdf':'txt'}">${f.ext.toUpperCase()}</div>
+      <div class="file-meta"><div class="file-name" title="${f.name}">${f.name}</div><div class="file-size">${fmtSize(f.size)}</div></div>
+      <select class="file-cat" onchange="uploadedFiles[${i}].category=this.value">
         <option value="powerskill" ${f.category==='powerskill'?'selected':''}>Framework</option>
         <option value="company"    ${f.category==='company'   ?'selected':''}>Empresa</option>
         <option value="manual"     ${f.category==='manual'    ?'selected':''}>Manual/SOP</option>
       </select>
-      <button class="btn-remove" onclick="uploadedFiles.splice(${i},1);renderFileList()">×</button>
-    `;
+      <button class="btn-rm" onclick="uploadedFiles.splice(${i},1);renderFiles()">×</button>`;
     list.appendChild(item);
   });
 }
 
 // ── GENERATE ──
-function val(id) { return (document.getElementById(id)?.value||'').trim(); }
-function setStatus(msg, type) { const el=document.getElementById('status'); el.textContent=msg; el.className='status '+(type||''); }
+function v(id){ return (document.getElementById(id)?.value||'').trim(); }
+function sv(id,val){ const el=document.getElementById(id); if(el) el.value=val; }
+function setStatus(msg,type){ const el=document.getElementById('status'); el.textContent=msg; el.className='status '+(type||''); }
 
-async function generate() {
-  const apiKey = val('api-key');
-  if (!apiKey || !apiKey.startsWith('sk-')) { setStatus('Ingresa y guarda tu API key primero.', 'error'); return; }
-  if (!val('scenario-name')) { setStatus('Agrega el nombre del escenario.', 'error'); return; }
+async function generate(){
+  const apiKey=v('api-key');
+  if(!apiKey||!apiKey.startsWith('sk-')){ setStatus('Ingresa y guarda tu API key primero.','error'); return; }
+  if(!v('scenario-title')){ setStatus('El título del escenario es requerido.','error'); return; }
 
-  const archetypeEl = document.getElementById('archetype');
-  const archetype = archetypeEl.value === 'custom' ? val('archetype-custom') : archetypeEl.value;
-  const mode = val('mode');
+  // Build context blocks
+  const archetypeSel = document.getElementById('archetype-select');
+  let archetypeBlock = '';
+  if(archetypeSel.value){
+    const a = archetypeSel.value.startsWith('d') ? defaultArchetypes[parseInt(archetypeSel.value.slice(1))] : ls.get('mindy_archetypes')[parseInt(archetypeSel.value.slice(1))];
+    if(a) archetypeBlock = `Nombre: ${a.name}\nRol: ${a.role||'-'}\nEstado emocional: ${a.emotion||'-'}\nPatrón: ${a.pattern||'-'}\nPreocupaciones: ${a.concerns||'-'}\nTensión oculta: ${a.tension||'-'}`;
+  }
 
-  // Build rubric block
-  const totalWeight = criteria.reduce((s,c) => s+(parseInt(c.weight)||0), 0);
-  const rubricBlock = criteria.length > 0
-    ? criteria.map(c => `  - ${c.name}: ${c.weight}%`).join('\n') +
-      (totalWeight !== 100 ? `\n  (Nota: pesos suman ${totalWeight}%, normalizar al evaluar)` : '')
-    : '  (sin criterios definidos — usa criterios generales de la competencia)';
+  const rubricBlock = currentMode==='partner' ? '(modo partner — sin rúbrica formal)' :
+    criteria.length>0 ? criteria.map(c=>`  - ${c.name}: ${c.weight}%`).join('\n') : '(sin criterios — usar criterios generales)';
 
-  const scoringInstructions = {
-    'Práctica': 'Modo PRÁCTICA: Entrega score orientativo (0-100) con desglose por criterio. El tono es de aprendizaje seguro — el score es formativo, no punitivo. Destaca 1-2 fortalezas y 1 área de mejora concreta.',
-    'Assessment': 'Modo ASSESSMENT: Entrega score formal (0-100) con desglose por criterio, nivel de dominio (Inicial/En desarrollo/Competente/Experto), y resultado de certificación (Aprobado si ≥70, No aprobado si <70). Sé riguroso y basado solo en evidencia observable.',
-    'Partner': 'Modo PARTNER: Entrega score suave (0-100) como punto de partida para reflexión. El foco es la conversación sobre el aprendizaje, no la calificación. Haz 1-2 preguntas de reflexión al learner al final del feedback.'
+  const companyBlock = [v('co-name')&&`Empresa: ${v('co-name')}`, v('co-industry')&&`Industria: ${v('co-industry')}`, v('co-purpose')&&`Propósito: ${v('co-purpose')}`, v('co-values')&&`Valores: ${v('co-values')}`, v('co-leadership')&&`Expectativas liderazgo: ${v('co-leadership')}`, v('co-challenges')&&`Desafíos: ${v('co-challenges')}`, v('co-comm-style')&&`Estilo comunicación: ${v('co-comm-style')}`, v('co-jargon')&&`Jerga: ${v('co-jargon')}`, v('co-avoid')&&`Frases a evitar: ${v('co-avoid')}`, v('co-notes')&&`Notas culturales: ${v('co-notes')}`].filter(Boolean).join('\n');
+
+  const scenarioBlock = `MODO: ${currentMode==='roleplay'?'Role-play':currentMode==='partner'?'Partner/Coaching':'Guía SOPs'}
+TÍTULO: ${v('scenario-title')}
+OBJETIVO: ${v('scenario-objective')||'-'}
+RELACIÓN: ${v('scenario-relation')||'-'}
+TONO EMOCIONAL INICIAL: ${v('scenario-tone')||'-'}
+EVENTO GATILLANTE: ${v('scenario-trigger')||'-'}
+QUÉ ESTÁ EN JUEGO: ${v('scenario-stakes')||'-'}
+DIFICULTAD: ${difficulty}
+NIVEL DE RESISTENCIA: ${resistance}
+POWER SKILLS: ${selectedSkills.length > 0 ? selectedSkills.join(', ') : v('skill-text')||'-'}
+POWERTIPS / FRAMEWORKS: ${selectedTips.length > 0 ? selectedTips.map(t=>t.name+': '+t.content).join(' | ') : v('tip-text')||'-'}
+NOTAS ADICIONALES SKILL: ${v('skill-text')||''}
+${currentMode==='roleplay'?`ARQUETIPO:
+${archetypeBlock||'(no seleccionado)'}
+PATHWAY A (bien): ${v('path-a')||'-'}
+PATHWAY B (mal): ${v('path-b')||'-'}
+PATHWAY C (regular): ${v('path-c')||'-'}
+`:''}RÚBRICA:
+${rubricBlock}
+IDIOMA: ${v('lang')}
+${companyBlock?`\nEMPRESA:\n${companyBlock}`:''}`.trim();
+
+  const modeInstructions = {
+    roleplay: `Genera 4 system prompts FUNCIONALMENTE DISTINTOS para una simulación de liderazgo. Cada uno tiene propósito, voz y estructura radicalmente diferente:
+
+1. AVATAR (encarna al personaje):
+Voz: primera persona, completamente en personaje. Propósito: simular la conversación real. Estructura: quién eres, cómo te sientes emocionalmente, qué sabes y qué ocultas, cómo reaccionas según la conducta del learner (pathway A si lo hace bien, B si lo hace mal, C si es regular). NUNCA coaching, NUNCA salir del personaje, NUNCA explicar el ejercicio. Usa el lenguaje y cultura de la empresa. Comienza con la introducción de sesión indicada.
+
+2. EVALUADOR (analiza el transcript al finalizar):
+Voz: analítica, objetiva, basada en evidencia observable. Propósito: evaluar la conducta del learner. Estructura: score total 0-100, desglose por cada criterio de la rúbrica con puntaje individual, nivel de dominio global (Inicial/En desarrollo/Competente/Experto), resultado (Aprobado ≥70 / No aprobado <70), síntesis de 2-3 líneas. SOLO evidencia del transcript, nunca supone intenciones.
+
+3. LEARNER FEEDBACK (entrega feedback al aprendiz):
+Voz: cálida, directa, orientada al crecimiento. Propósito: feedback personal y accionable. Estructura: saludo personalizado → 1-2 fortalezas con cita o ejemplo del transcript → 1 brecha específica con ejemplo concreto → 1 paso práctico para la próxima vez → score presentado de forma accesible y motivadora. Nunca punitivo, siempre desarrollador.
+
+4. MANAGER REPORT (reporte para manager/RRHH):
+Voz: profesional, ejecutiva, basada en datos. Propósito: informar con evidencia objetiva. Estructura: (a) Resumen ejecutivo — qué practicó y en qué contexto; (b) Conducta observada — descripción objetiva y específica sin juicios de persona; (c) Score con desglose por criterio en formato tabla o lista; (d) Nivel de dominio alcanzado; (e) Resultado de certificación; (f) Fortalezas — 2-3 conductas concretas bien ejecutadas; (g) Brechas prioritarias — máx 2 con evidencia del transcript; (h) Recomendación de seguimiento — próximo paso de desarrollo sugerido. Nunca especulativo.`,
+
+    partner: `Genera 2 system prompts:
+1. AVATAR (Mindy Partner): Eres la asistente inteligente de desarrollo de liderazgo de esta empresa. Combinas el rol de coach, mentora y HRBP. Tienes conocimiento completo del framework de Power Skills de 100 Minds, la cultura y valores de la empresa, y todos sus SOPs, manuales y procedimientos cargados. El usuario te activa cuando necesita ayuda — puede ser para entender un procedimiento, preparar una conversación difícil, recordar un powertip, reflexionar sobre una situación de liderazgo, o practicar algo contigo. Tu tono es cálido, presente y orientado al desarrollo. NUNCA evalúas ni das puntajes formales. Haces preguntas poderosas. Ofreces perspectivas basadas en el framework. Si el usuario quiere practicar una conversación, la haces desde un rol de apoyo y sparring. Si pregunta sobre procedimientos o SOPs, respondes basándote exclusivamente en los documentos cargados — nunca inventas información operativa. Comienza con la introducción de sesión indicada.
+2. LEARNER (Cierre de sesión): Síntesis cálida del encuentro. Qué exploró el usuario, qué insights emergieron, qué próximos pasos consideró. Sin scoring. Tono de apoyo y desarrollo.`
   };
 
-  const scenarioBlock = `
-SKILL: ${val('skill')||'(no especificado)'}
-FRAMEWORK / POWERTIP: ${val('powertip')||'(no especificado)'}
-ESCENARIO: ${val('scenario-name')}
-CONTEXTO: ${val('context')||'(no especificado)'}
-ROL LEARNER: ${val('learner-role')||'(no especificado)'}
-ROL AVATAR: ${val('avatar-role')||'(no especificado)'}
-ARQUETIPO: ${archetype}
-PATHWAY A (bien): ${val('path-a')||'(no especificado)'}
-PATHWAY B (mal): ${val('path-b')||'(no especificado)'}
-PATHWAY C (regular): ${val('path-c')||'(no definido)'}
-MODO: ${mode}
-IDIOMA: ${val('lang')}
 
-RÚBRICA DE EVALUACIÓN:
-${rubricBlock}
-`.trim();
+  const systemPrompt = `Eres un experto en diseño de simulaciones de entrenamiento y prompts para LLMs en contextos de liderazgo y desarrollo organizacional.
 
-  const kbText = [val('kb-framework') ? `FRAMEWORK 100 MINDS:\n${val('kb-framework')}` : '',
-                  val('kb-company')   ? `CULTURA EMPRESA:\n${val('kb-company')}` : ''].filter(Boolean).join('\n\n');
+${modeInstructions[currentMode]}
 
-  const systemPrompt = `Eres un experto en diseño de simulaciones de liderazgo y evaluación de competencias conductuales. Genera 4 system prompts diferenciados para la plataforma Mindy de 100 Minds.
+REGLAS:
+- Cada prompt FUNCIONALMENTE DISTINTO en voz, propósito y estructura.
+- Todos los prompts en: ${v('lang')}
+- Máximo ~400 palabras por prompt.
+- Incorpora el framework/powertip como criterio observable en el evaluador.
+- Si hay perfil de empresa, personaliza el avatar con su lenguaje, valores y cultura.
+- Si hay frases a evitar, el avatar las evita activamente.
 
-USA los documentos adjuntos (framework, KB empresa, manuales) para personalizar los prompts. El avatar debe sonar como alguien de esa empresa real. El evaluador debe usar el framework y la rúbrica exacta proporcionada.
+REGLAS DE GUARDRAIL (aplican a TODOS los prompts generados, sin excepción):
+${guardrails.map((g,i) => `${i+1}. ${g}`).join('\n')}
 
-LOS 4 ROLES:
-1. AVATAR: Encarna al personaje con el arquetipo dado. Nunca sale del personaje. Nunca hace coaching. Sigue el pathway según la conducta del learner (A si lo hace bien, B si lo hace mal, C si es regular). Si hay KB de empresa, habla con su lenguaje y cultura.
+INTRODUCCIÓN DE SESIÓN (el avatar debe comenzar la conversación con este texto, adaptándolo al contexto):
+"${document.getElementById('session-intro')?.value || ''}"
 
-2. EVALUADOR: Evalúa la conducta observable del learner usando EXACTAMENTE la rúbrica proporcionada. ${scoringInstructions[mode]} Solo usa evidencia del transcript. Estructura: score total + desglose por criterio + síntesis.
-
-3. LEARNER FEEDBACK: Feedback personal al aprendiz en tono desarrollador. Empieza por fortalezas (con ejemplo del transcript), luego brecha específica (con ejemplo), luego 1 paso concreto para la próxima vez. Incluye el score del evaluador de forma accesible.
-
-4. MANAGER REPORT: Reporte estructurado para manager/RRHH. Conducta observada (objetiva, sin juicios), score con desglose, resultado según modo (${mode}), tendencias si hay sesiones previas.
-
-REGLAS CRÍTICAS:
-- Cada prompt es FUNCIONALMENTE DISTINTO. Voz, propósito y estructura diferentes.
-- Todos los prompts en: ${val('lang')}
-- Máximo ~350 palabras por prompt.
-- El evaluador DEBE referenciar los criterios de la rúbrica por nombre.
-
-RESPONDE SOLO con JSON válido: { avatar, evaluator, learner, manager }. Sin markdown, sin texto extra.`;
+RESPONDE SOLO con JSON válido: { ${currentMode==='roleplay'?'avatar, evaluator, learner, manager':currentMode==='partner'?'avatar, learner':'avatar'} }. Sin markdown, sin texto extra.`;
 
   const userContent = [];
-  uploadedFiles.forEach(f => {
-    if (f.mediaType === 'application/pdf') {
-      userContent.push({ type:'text', text:`[KB — ${f.category} — ${f.name}]` });
-      userContent.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data:f.content } });
-    } else {
-      userContent.push({ type:'text', text:`[KB — ${f.category} — ${f.name}]\n\n${f.content}` });
-    }
+  uploadedFiles.forEach(f=>{
+    if(f.mediaType==='application/pdf'){ userContent.push({type:'text',text:`[KB — ${f.category} — ${f.name}]`}); userContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:f.content}}); }
+    else { userContent.push({type:'text',text:`[KB — ${f.category} — ${f.name}]\n\n${f.content}`}); }
   });
-  userContent.push({ type:'text', text:`Genera los 4 prompts:\n\n${scenarioBlock}${kbText ? '\n\n'+kbText : ''}` });
+  userContent.push({type:'text',text:`Genera los prompts para este escenario:\n\n${scenarioBlock}`});
 
-  const btn = document.getElementById('btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Generando...';
-  setStatus('Enviando a Claude' + (uploadedFiles.length ? ` + ${uploadedFiles.length} doc(s)` : '') + '...', '');
-  Object.keys(prompts).forEach(k => prompts[k] = '');
+  const btn=document.getElementById('btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Generando...';
+  setStatus('Enviando a Claude'+(uploadedFiles.length?` + ${uploadedFiles.length} doc(s)`:'')+'...','');
+  Object.keys(prompts).forEach(k=>prompts[k]='');
   showRole(activeRole);
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:4096,
-        system: systemPrompt,
-        messages:[{ role:'user', content: userContent }]
-      })
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,system:systemPrompt,messages:[{role:'user',content:userContent}]})
     });
-
-    if (!res.ok) { const e=await res.json(); throw new Error(e.error?.message||`HTTP ${res.status}`); }
-    const data = await res.json();
-    const raw = data.content.map(b=>b.text||'').join('');
-    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
-
-    prompts.avatar    = parsed.avatar    || '';
-    prompts.evaluator = parsed.evaluator || '';
-    prompts.learner   = parsed.learner   || '';
-    prompts.manager   = parsed.manager   || '';
-
+    if(!res.ok){ const e=await res.json(); throw new Error(e.error?.message||`HTTP ${res.status}`); }
+    const data=await res.json();
+    const parsed=JSON.parse(data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
+    Object.assign(prompts, parsed);
     showRole(activeRole);
-    setStatus('Generado · ' + new Date().toLocaleTimeString('es-CL'), 'ok');
+    setStatus('Generado · '+new Date().toLocaleTimeString('es-CL')+(uploadedFiles.length?` · ${uploadedFiles.length} doc(s) incorporado(s)`:''),'ok');
   } catch(e) {
-    setStatus('Error: ' + e.message, 'error');
-    const body = document.getElementById('prompt-display');
-    body.textContent = 'Error al generar.\n\n' + e.message;
-    body.classList.add('empty');
+    setStatus('Error: '+e.message,'error');
+    const body=document.getElementById('prompt-display'); body.textContent='Error al generar.\n\n'+e.message; body.classList.add('empty');
   }
-
-  btn.disabled = false;
-  btn.textContent = 'Regenerar prompts';
+  btn.disabled=false; btn.textContent='Regenerar prompts';
 }
 
-function showRole(role) {
-  activeRole = role;
-  const cfg = roleConfig[role];
-  document.getElementById('role-name').textContent = cfg.label;
-  document.getElementById('role-desc').textContent = cfg.desc;
-  document.getElementById('role-dot').style.background = cfg.color;
-  const body = document.getElementById('prompt-display');
-  const text = prompts[role];
-  if (text) { body.textContent = text; body.classList.remove('empty'); }
-  else { body.textContent = 'Genera los prompts primero.'; body.classList.add('empty'); }
+function showRole(role){
+  activeRole=role;
+  const cfg=roleConfig[role]||roleConfig.avatar;
+  document.getElementById('role-name').textContent=cfg.label;
+  document.getElementById('role-desc').textContent=cfg.desc;
+  document.getElementById('role-dot').style.background=cfg.color;
+  const body=document.getElementById('prompt-display');
+  const text=prompts[role];
+  if(text){ body.textContent=text; body.classList.remove('empty'); }
+  else { body.textContent='Genera los prompts primero.'; body.classList.add('empty'); }
+}
+function switchTab(role,el){ document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); showRole(role); }
+function copyPrompt(){
+  const text=prompts[activeRole]; if(!text) return;
+  navigator.clipboard.writeText(text).then(()=>{ const btn=document.querySelector('.btn-copy'); btn.textContent='Copiado ✓'; setTimeout(()=>btn.textContent='Copiar',1600); });
 }
 
-function switchTab(role, el) {
-  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  showRole(role);
+// ── INTRO PRESETS ──
+const introPresets = {
+  roleplay: 'Hola. Soy Mindy, tu compañero/a de práctica. Estamos a punto de comenzar una simulación de conversación. Yo voy a encarnar el rol de [ROL DEL AVATAR]. Tú serás [ROL DEL LEARNER]. La situación es: [CONTEXTO]. Cuando estés listo/a, di "comenzamos" y yo reaccionaré como lo haría [ROL DEL AVATAR] en esta situación real. No hay respuestas correctas o incorrectas — esto es práctica.',
+  partner:  'Hola, soy Mindy. Estoy aquí para acompañarte — puede ser que quieras preparar una conversación difícil, entender un procedimiento, explorar una situación de liderazgo o simplemente pensar en voz alta. No tengo agenda. ¿Por dónde quieres empezar?',
+  formal:   'Bienvenido/a a esta sesión de desarrollo. Mi nombre es Mindy. Durante esta sesión trabajaremos en [SKILL]. Comenzaremos con una situación de práctica. Por favor indícame cuando estés preparado/a para iniciar.',
+  warmup:   '¡Hola! Soy Mindy, lista para practicar contigo. Hoy vamos a simular [ESCENARIO]. Sin presión — esto es un espacio seguro para experimentar. ¿Cómo te sientes antes de empezar?'
+};
+
+function setIntroPreset(key) {
+  document.getElementById('session-intro').value = introPresets[key] || '';
+}
+function resetIntro() {
+  document.getElementById('session-intro').value = introPresets['roleplay'];
 }
 
-function copyPrompt() {
-  const text = prompts[activeRole];
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.btn-copy');
-    btn.textContent = 'Copiado ✓';
-    setTimeout(() => btn.textContent = 'Copiar', 1600);
-  });
+// ── GUARDRAILS ──
+let guardrails = [];
+const defaultGuardrails = [
+  'Nunca salir del personaje durante el role-play sin autorización explícita del facilitador',
+  'Nunca proporcionar respuestas o soluciones directas — guiar mediante preguntas y reflexión',
+  'Nunca hacer juicios sobre la persona del learner, solo sobre conductas observables',
+  'Nunca inventar información sobre procedimientos, políticas o datos de la empresa',
+  'Nunca continuar si el learner expresa malestar emocional real — pausar y ofrecer salida segura'
+];
+
+function initGuardrails() {
+  guardrails = ls.get('mindy_guardrails');
+  if(guardrails.length === 0) {
+    guardrails = [...defaultGuardrails];
+    ls.set('mindy_guardrails', guardrails);
+  }
+  renderGuardrails();
 }
+
+function toggleGuardrailForm() {
+  document.getElementById('guardrail-form').classList.toggle('visible');
+}
+
+function addGuardrail() {
+  const val = document.getElementById('new-guardrail').value.trim();
+  if(!val) return;
+  guardrails.push(val);
+  ls.set('mindy_guardrails', guardrails);
+  document.getElementById('new-guardrail').value = '';
+  toggleGuardrailForm();
+  renderGuardrails();
+}
+
+function removeGuardrail(i) {
+  guardrails.splice(i, 1);
+  ls.set('mindy_guardrails', guardrails);
+  renderGuardrails();
+}
+
+function renderGuardrails() {
+  const list = document.getElementById('guardrail-list');
+  if(!list) return;
+  list.innerHTML = guardrails.map((g, i) => `
+    <div class="guardrail-item">
+      <div class="gi-icon">✕</div>
+      <div class="gi-text">${g}</div>
+      <button class="gi-rm" onclick="removeGuardrail(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+
+// ══ EDIT / DELETE helpers ══
+
+function editScenarioProfile(idx) {
+  const saved = ls.get('mindy_scenarios');
+  const p = saved[idx]; if(!p) return;
+  sv('scenario-title', p.title||'');
+  sv('scenario-objective', p.objective||'');
+  sv('scenario-relation', p.relation||'');
+  sv('scenario-tone', p.tone||'');
+  sv('scenario-trigger', p.trigger||'');
+  sv('scenario-stakes', p.stakes||'');
+  // Remove old and let user re-save with same or new name
+  saved.splice(idx, 1);
+  ls.set('mindy_scenarios', saved);
+  populateScenarioProfiles();
+  // Pre-fill save name
+  document.getElementById('scenario-save-name').value = p.saveName||'';
+  document.getElementById('save-scenario-form').classList.add('visible');
+  setStatus('Escenario cargado para editar — guárdalo de nuevo cuando termines.', '');
+}
+
+function editCompanyProfile(idx) {
+  loadCompanyProfile(idx);
+  // Load its SOPs into coSopFiles
+  const companies = ls.get('mindy_companies');
+  const c = companies[idx]; if(!c) return;
+  coSopFiles.length = 0;
+  (c.sopFiles||[]).forEach(f => coSopFiles.push(f));
+  renderCoSopList();
+  // Remove old
+  companies.splice(idx, 1);
+  ls.set('mindy_companies', companies);
+  populateCompanyProfiles();
+  populateActiveCompanySelect();
+  setStatus('Perfil de empresa cargado para editar — guárdalo de nuevo cuando termines.', '');
+}
+
+function editArchetype(idx, type) {
+  const key = type === 's' ? 'mindy_archetypes' : null;
+  if(!key) return;
+  const saved = ls.get(key);
+  const a = saved[idx]; if(!a) return;
+  sv('new-arch-name', a.name||'');
+  sv('new-arch-role', a.role||'');
+  sv('new-arch-emotion', a.emotion||'');
+  sv('new-arch-pattern', a.pattern||'');
+  sv('new-arch-concerns', a.concerns||'');
+  sv('new-arch-tension', a.tension||'');
+  saved.splice(idx, 1);
+  ls.set(key, saved);
+  populateArchetypes();
+  document.getElementById('archetype-form').classList.add('visible');
+  setStatus('Arquetipo cargado para editar.', '');
+}
+
+function editPathway(idx, type) {
+  const key = type === 's' ? 'mindy_pathways' : null;
+  if(!key) return;
+  const saved = ls.get(key);
+  const p = saved[idx]; if(!p) return;
+  sv('new-pw-name', p.name||'');
+  sv('new-pw-a', p.a||'');
+  sv('new-pw-b', p.b||'');
+  sv('new-pw-c', p.c||'');
+  saved.splice(idx, 1);
+  ls.set(key, saved);
+  populatePathways();
+  document.getElementById('pathway-form').classList.add('visible');
+  setStatus('Pathway cargado para editar.', '');
+}
+
+function editSkill(idx) {
+  const saved = ls.get('mindy_skills');
+  const s = saved[idx]; if(!s) return;
+  sv('new-skill-name', s);
+  saved.splice(idx, 1);
+  ls.set('mindy_skills', saved);
+  populateSkills();
+  document.getElementById('skill-add-form').classList.add('visible');
+}
+
+function editTip(idx) {
+  const saved = ls.get('mindy_tips');
+  const t = saved[idx]; if(!t) return;
+  sv('new-tip-name', t.name||'');
+  sv('new-tip-content', t.content||'');
+  saved.splice(idx, 1);
+  ls.set('mindy_tips', saved);
+  populateTips();
+  document.getElementById('tip-add-form').classList.add('visible');
+}
+
+// ── Enhanced populateCompanyProfiles with edit/delete buttons ──
+function populateCompanyProfilesWithActions() {
+  populateCompanyProfiles();
+  // Also render an editable list below the dropdown
+  const listEl = document.getElementById('company-edit-list');
+  if(!listEl) return;
+  const saved = ls.get('mindy_companies');
+  if(saved.length === 0) { listEl.innerHTML = '<div style="font-size:11px;color:var(--muted)">No hay empresas guardadas aún.</div>'; return; }
+  console.log('rendering', saved.length, 'companies');
+  listEl.innerHTML = saved.map((c,i) => `
+    <div class="editable-item">
+      <div class="editable-item-name">${c.name||'(sin nombre)'}</div>
+      <div class="editable-item-sub">${c.industry||''} ${c.sopFiles?.length ? '· '+c.sopFiles.length+' SOP(s)' : ''}</div>
+      <div class="item-actions">
+        <button class="btn-xs" onclick="editCompanyProfile(${i})">Editar</button>
+        <button class="btn-xs danger" onclick="deleteCompanyByIdx(${i})">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteCompanyByIdx(idx) {
+  if(!confirm('¿Eliminar este perfil de empresa?')) return;
+  const saved = ls.get('mindy_companies'); saved.splice(idx,1); ls.set('mindy_companies',saved);
+  populateCompanyProfiles(); populateActiveCompanySelect();
+  populateCompanyProfilesWithActions();
+}
+
+
+// ── SELECTED SKILLS & TIPS (multi-select) ──
+let selectedSkills = []; // [{name, content}]
+let selectedTips   = []; // [{name, content}]
+
+function addSelectedSkill(sel) {
+  const val = sel.value; if(!val) return;
+  const s = val.startsWith('d') ? defaultSkills[parseInt(val.slice(1))] : ls.get('mindy_skills')[parseInt(val.slice(1))];
+  const name = typeof s === 'string' ? s : s;
+  if(!name || selectedSkills.find(x=>x===name)) { sel.value=''; return; }
+  selectedSkills.push(name);
+  renderSelectedSkills();
+  sel.value = '';
+}
+function removeSelectedSkill(i) { selectedSkills.splice(i,1); renderSelectedSkills(); }
+function renderSelectedSkills() {
+  const el = document.getElementById('selected-skills'); if(!el) return;
+  el.innerHTML = selectedSkills.map((s,i) =>
+    `<span class="skill-tag">${s}<button class="tag-rm" onclick="removeSelectedSkill(${i})">×</button></span>`
+  ).join('');
+}
+
+function addSelectedTip(sel) {
+  const val = sel.value; if(!val) return;
+  const t = val.startsWith('d') ? defaultTips[parseInt(val.slice(1))] : ls.get('mindy_tips')[parseInt(val.slice(1))];
+  const name = t?.name || t;
+  const tipContent = t?.content || t;
+  if(!name || selectedTips.find(x=>x.name===name)) { sel.value=''; return; }
+  selectedTips.push({name, content: tipContent});
+  renderSelectedTips();
+  sel.value = '';
+}
+function removeSelectedTip(i) { selectedTips.splice(i,1); renderSelectedTips(); }
+function renderSelectedTips() {
+  const el = document.getElementById('selected-tips'); if(!el) return;
+  el.innerHTML = selectedTips.map((t,i) =>
+    `<span class="tip-tag">${t.name}<button class="tag-rm" onclick="removeSelectedTip(${i})">×</button></span>`
+  ).join('');
+}
+
+// ── EDIT/DELETE LIST RENDERER ──
+function renderEditList(containerId, items, editFn, deleteFn, subtitleFn) {
+  const el = document.getElementById(containerId); if(!el) return;
+  if(!items || items.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:6px">' +
+    items.map((item, i) => `
+      <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 9px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.name||item||'(sin nombre)'}</div>
+          ${subtitleFn ? '<div style="font-size:10px;color:var(--muted)">'+subtitleFn(item)+'</div>' : ''}
+        </div>
+        <button class="btn-xs" onclick="${editFn}(${i})" style="padding:3px 8px;font-size:11px">Editar</button>
+        <button class="btn-xs danger" onclick="${deleteFn}(${i})" style="padding:3px 8px;font-size:11px">✕</button>
+      </div>`
+    ).join('') + '</div>';
+}
+
+function refreshAllEditLists() {
+  renderEditList('scenario-edit-list', ls.get('mindy_scenarios'), 'editScenarioProfile', 'deleteScenario', s => s.saveName||'');
+  renderEditList('archetype-edit-list', ls.get('mindy_archetypes'), 'editArchetypeItem', 'deleteArchetype', a => (a.role||'') + (a.emotion?' · '+a.emotion:''));
+  renderEditList('pathway-edit-list', ls.get('mindy_pathways'), 'editPathwayItem', 'deletePathway', p => p.a ? p.a.substring(0,50)+'...' : '');
+  renderEditList('skill-edit-list', ls.get('mindy_skills'), 'editSkillItem', 'deleteSkill', s => '');
+  renderEditList('tip-edit-list', ls.get('mindy_tips'), 'editTipItem', 'deleteTip', t => t.content ? t.content.substring(0,50)+'...' : '');
+  populateCompanyProfilesWithActions();
+}
+
+// Delete functions
+function deleteScenario(i)   { if(!confirm('¿Eliminar este escenario?')) return; const s=ls.get('mindy_scenarios'); s.splice(i,1); ls.set('mindy_scenarios',s); populateScenarioProfiles(); refreshAllEditLists(); }
+function deleteArchetype(i)  { if(!confirm('¿Eliminar este arquetipo?')) return; const s=ls.get('mindy_archetypes'); s.splice(i,1); ls.set('mindy_archetypes',s); populateArchetypes(); refreshAllEditLists(); }
+function deletePathway(i)    { if(!confirm('¿Eliminar este pathway?')) return; const s=ls.get('mindy_pathways'); s.splice(i,1); ls.set('mindy_pathways',s); populatePathways(); refreshAllEditLists(); }
+function deleteSkill(i)      { if(!confirm('¿Eliminar esta skill?')) return; const s=ls.get('mindy_skills'); s.splice(i,1); ls.set('mindy_skills',s); populateSkills(); refreshAllEditLists(); }
+function deleteTip(i)        { if(!confirm('¿Eliminar este powertip?')) return; const s=ls.get('mindy_tips'); s.splice(i,1); ls.set('mindy_tips',s); populateTips(); refreshAllEditLists(); }
+
+// Edit functions (load into form, remove from list)
+function editScenarioProfile(i) {
+  const saved=ls.get('mindy_scenarios'); const p=saved[i]; if(!p) return;
+  sv('scenario-title',p.title||''); sv('scenario-objective',p.objective||'');
+  sv('scenario-relation',p.relation||''); sv('scenario-tone',p.tone||'');
+  sv('scenario-trigger',p.trigger||''); sv('scenario-stakes',p.stakes||'');
+  sv('scenario-save-name', p.saveName||'');
+  saved.splice(i,1); ls.set('mindy_scenarios',saved);
+  populateScenarioProfiles(); refreshAllEditLists();
+  document.getElementById('save-scenario-form').classList.add('visible');
+  setStatus('Escenario cargado — edita y guarda de nuevo.','');
+}
+function editArchetypeItem(i) {
+  const saved=ls.get('mindy_archetypes'); const a=saved[i]; if(!a) return;
+  sv('new-arch-name',a.name||''); sv('new-arch-role',a.role||''); sv('new-arch-emotion',a.emotion||'');
+  sv('new-arch-pattern',a.pattern||''); sv('new-arch-concerns',a.concerns||''); sv('new-arch-tension',a.tension||'');
+  saved.splice(i,1); ls.set('mindy_archetypes',saved);
+  populateArchetypes(); refreshAllEditLists();
+  document.getElementById('archetype-form').classList.add('visible');
+}
+function editPathwayItem(i) {
+  const saved=ls.get('mindy_pathways'); const p=saved[i]; if(!p) return;
+  sv('new-pw-name',p.name||''); sv('new-pw-a',p.a||''); sv('new-pw-b',p.b||''); sv('new-pw-c',p.c||'');
+  saved.splice(i,1); ls.set('mindy_pathways',saved);
+  populatePathways(); refreshAllEditLists();
+  document.getElementById('pathway-form').classList.add('visible');
+}
+function editSkillItem(i) {
+  const saved=ls.get('mindy_skills'); const s=saved[i]; if(!s) return;
+  sv('new-skill-name', s);
+  saved.splice(i,1); ls.set('mindy_skills',saved);
+  populateSkills(); refreshAllEditLists();
+  document.getElementById('skill-add-form').classList.add('visible');
+}
+function editTipItem(i) {
+  const saved=ls.get('mindy_tips'); const t=saved[i]; if(!t) return;
+  sv('new-tip-name',t.name||''); sv('new-tip-content',t.content||'');
+  saved.splice(i,1); ls.set('mindy_tips',saved);
+  populateTips(); refreshAllEditLists();
+  document.getElementById('tip-add-form').classList.add('visible');
+}
+
 </script>
 </body>
 </html>
