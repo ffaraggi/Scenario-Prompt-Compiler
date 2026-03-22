@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mindy — Scenario Prompt Compiler</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede6;
+    --muted: #888580;
+    --accent: #c8a96e;
+    --accent2: #8fb89a;
+    --danger: #c86e6e;
+    --info: #8faacc;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+
+  header { border-bottom: 1px solid var(--border); padding: 18px 32px; display: flex; align-items: baseline; gap: 14px; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; color: var(--accent); }
+  header span { color: var(--muted); font-size: 13px; }
+
+  .layout { display: grid; grid-template-columns: 320px 300px 1fr; min-height: calc(100vh - 61px); }
+  .col { border-right: 1px solid var(--border); padding: 22px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .col:last-child { border-right: none; }
+  .col-title { font-size: 10px; font-weight: 500; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11px; color: var(--muted); letter-spacing: 0.3px; }
+  .field input, .field textarea, .field select {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 8px 11px; outline: none; transition: border-color 0.2s; width: 100%;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field select option { background: #222; }
+  .divider { height: 1px; background: var(--border); }
+
+  /* PATHWAY LIBRARY */
+  .pathway-header {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .pathway-header span { font-size: 11px; color: var(--muted); }
+  .btn-link {
+    background: none; border: none; color: var(--accent); font-family: 'DM Sans', sans-serif;
+    font-size: 11px; cursor: pointer; padding: 0; text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .btn-link:hover { opacity: 0.75; }
+
+  .pathway-select-wrap { position: relative; }
+  .pathway-select-wrap select {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 8px 11px; outline: none; width: 100%; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .pathway-select-wrap select:focus { border-color: var(--accent); }
+
+  .pathway-preview {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 12px; font-size: 12px; line-height: 1.6; display: none;
+  }
+  .pathway-preview.visible { display: block; }
+  .pathway-preview .pw-row { margin-bottom: 5px; }
+  .pathway-preview .pw-row:last-child { margin-bottom: 0; }
+  .pw-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; display: block; margin-bottom: 1px; }
+  .pw-val { color: var(--text); }
+  .pw-a { color: var(--accent2); }
+  .pw-b { color: var(--danger); }
+
+  /* Add pathway form */
+  .add-pathway-form {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 12px; display: flex; flex-direction: column; gap: 8px; display: none;
+  }
+  .add-pathway-form.visible { display: flex; }
+  .add-pathway-form .form-title { font-size: 11px; font-weight: 500; color: var(--accent); }
+  .btn-small {
+    padding: 6px 12px; border-radius: 6px; font-family: 'DM Sans', sans-serif;
+    font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-save { background: var(--accent); color: #0f0f0f; border: none; font-weight: 500; }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-cancel { background: transparent; border: 1px solid var(--border2); color: var(--muted); }
+  .btn-cancel:hover { color: var(--text); }
+
+  /* SCORING */
+  .scoring-section { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+  .scoring-title { font-size: 11px; font-weight: 500; color: var(--text); margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+  .mode-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .mode-badge.practice { background: rgba(143,184,154,0.15); color: var(--accent2); }
+  .mode-badge.assessment { background: rgba(200,169,110,0.15); color: var(--accent); }
+  .mode-badge.partner { background: rgba(143,170,204,0.15); color: var(--info); }
+
+  .criteria-list { display: flex; flex-direction: column; gap: 6px; }
+  .criterion-row {
+    display: grid; grid-template-columns: 1fr 50px 50px; gap: 6px; align-items: center;
+  }
+  .criterion-row input[type=text] {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px;
+    padding: 5px 8px; outline: none;
+  }
+  .criterion-row input[type=text]:focus { border-color: var(--accent); }
+  .criterion-row input[type=number] {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 12px;
+    padding: 5px 6px; outline: none; text-align: center; width: 100%;
+  }
+  .criterion-row input[type=number]:focus { border-color: var(--accent); }
+  .criterion-row .btn-remove-c {
+    background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; text-align: center;
+  }
+  .criterion-row .btn-remove-c:hover { color: var(--danger); }
+
+  .criteria-header { display: grid; grid-template-columns: 1fr 50px 50px; gap: 6px; margin-bottom: 2px; }
+  .criteria-header span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+
+  .btn-add-c { background: none; border: 1px dashed var(--border2); border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; padding: 5px 10px; width: 100%; margin-top: 4px; transition: all 0.15s; }
+  .btn-add-c:hover { border-color: var(--accent); color: var(--accent); }
+
+  .weight-total { font-size: 11px; text-align: right; margin-top: 4px; }
+  .weight-total.ok { color: var(--accent2); }
+  .weight-total.warn { color: var(--danger); }
+
+  .scoring-note { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .scoring-note b { color: var(--text); font-weight: 500; }
+
+  /* KB */
+  .drop-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 16px 12px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(200,169,110,0.04); }
+  .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-zone p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .drop-zone p strong { color: var(--text); }
+
+  .file-list { display: flex; flex-direction: column; gap: 6px; }
+  .file-item { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:none; } }
+  .file-icon { width: 26px; height: 26px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; flex-shrink: 0; }
+  .file-icon.pdf { background: rgba(200,110,110,0.15); color: #c86e6e; }
+  .file-icon.txt { background: rgba(143,170,204,0.15); color: var(--info); }
+  .file-meta { flex: 1; min-width: 0; }
+  .file-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-size { font-size: 10px; color: var(--muted); }
+  .file-category { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; padding: 3px 5px; outline: none; flex-shrink: 0; }
+  .btn-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; flex-shrink: 0; }
+  .btn-remove:hover { color: var(--danger); }
+
+  /* Generate */
+  .btn-generate { width: 100%; padding: 12px; background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+  .btn-generate:hover { opacity: 0.88; }
+  .btn-generate:disabled { opacity: 0.35; cursor: not-allowed; }
+  .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #0f0f0f; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status { font-size: 11px; color: var(--muted); text-align: center; }
+  .status.error { color: var(--danger); }
+  .status.ok { color: var(--accent2); }
+
+  /* Output */
+  .role-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
+  .rtab { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .rtab:hover { color: var(--text); }
+  .rtab.active { background: rgba(200,169,110,0.12); border-color: rgba(200,169,110,0.35); color: var(--accent); font-weight: 500; }
+
+  .prompt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; flex: 1; display: flex; flex-direction: column; min-height: 300px; }
+  .prompt-card-header { padding: 11px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .role-info { display: flex; align-items: center; gap: 8px; }
+  .role-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .role-name { font-weight: 500; font-size: 13px; }
+  .role-desc { font-size: 11px; color: var(--muted); }
+  .btn-copy { background: transparent; border: 1px solid var(--border2); border-radius: 6px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; padding: 4px 10px; cursor: pointer; transition: all 0.15s; }
+  .btn-copy:hover { color: var(--text); }
+  .prompt-body { padding: 16px; flex: 1; font-size: 12.5px; line-height: 1.8; color: var(--text); white-space: pre-wrap; word-break: break-word; overflow-y: auto; }
+  .prompt-body.empty { color: var(--muted); font-style: italic; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Mindy</h1>
+  <span>Scenario Prompt Compiler v3 — 100 Minds</span>
+</header>
+
+<div class="layout">
+
+  <!-- COL 1: SCENARIO + PATHWAYS + SCORING -->
+  <div class="col">
+    <div class="col-title">Escenario y parámetros</div>
+
+    <div class="field" id="api-key-field">
+      <label>Anthropic API key <span id="api-key-status" style="color:var(--accent2);font-size:10px"></span></label>
+      <div style="display:flex;gap:6px">
+        <input type="password" id="api-key" placeholder="sk-ant-..." style="flex:1" />
+        <button onclick="saveKey()" style="padding:8px 12px;background:var(--accent);color:#0f0f0f;border:none;border-radius:var(--radius);font-family:DM Sans,sans-serif;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap">Guardar</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">Se guarda en tu browser. Solo debes ingresarla una vez.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field"><label>Power skill a desarrollar</label><input type="text" id="skill" placeholder="Ej: Dar feedback efectivo" /></div>
+    <div class="field"><label>Framework / powertip clave</label><textarea id="powertip" placeholder="Ej: SBI — Situación, Comportamiento, Impacto..."></textarea></div>
+
+    <div class="divider"></div>
+
+    <div class="field"><label>Nombre del escenario</label><input type="text" id="scenario-name" placeholder="Ej: Feedback a colega que interrumpe" /></div>
+    <div class="field"><label>Contexto de negocio</label><textarea id="context" placeholder="Ej: Reuniones donde un colaborador interrumpe frecuentemente..." style="min-height:52px"></textarea></div>
+    <div class="field"><label>Rol del learner</label><input type="text" id="learner-role" placeholder="Ej: Líder de equipo" /></div>
+    <div class="field"><label>Rol del avatar</label><input type="text" id="avatar-role" placeholder="Ej: Colaborador directo" /></div>
+
+    <div class="divider"></div>
+
+    <!-- ARCHETYPE -->
+    <div class="field">
+      <label>Arquetipo del personaje</label>
+      <select id="archetype">
+        <option value="Defensivo — justifica, minimiza, explica intención">Defensivo (justifica, minimiza)</option>
+        <option value="Sensible — toma el feedback de forma personal">Sensible (se lo toma personal)</option>
+        <option value="Cínico — cuestiona la legitimidad del feedback">Cínico (cuestiona legitimidad)</option>
+        <option value="Pasivo-agresivo — asiente verbalmente pero cierra">Pasivo-agresivo</option>
+        <option value="custom">Personalizado...</option>
+      </select>
+    </div>
+    <div class="field" id="archetype-custom-field" style="display:none">
+      <label>Describe el arquetipo</label>
+      <textarea id="archetype-custom" placeholder="Describe la personalidad y patrones de reacción..."></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PATHWAY LIBRARY -->
+    <div>
+      <div class="pathway-header" style="margin-bottom:8px">
+        <div class="col-title" style="border:none;padding:0">Pathways</div>
+        <button class="btn-link" onclick="toggleAddForm()">+ Agregar pathway</button>
+      </div>
+
+      <div class="field">
+        <label>Seleccionar pathway guardado</label>
+        <div class="pathway-select-wrap">
+          <select id="pathway-select" onchange="loadPathway(this.value)">
+            <option value="">— Escribe manualmente abajo —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Preview of selected pathway -->
+      <div class="pathway-preview" id="pathway-preview"></div>
+
+      <!-- Add new pathway form -->
+      <div class="add-pathway-form" id="add-pathway-form">
+        <div class="form-title">Nuevo pathway</div>
+        <div class="field"><label>Nombre del pathway</label><input type="text" id="new-pw-name" placeholder="Ej: Feedback — Defensivo — Mining" /></div>
+        <div class="field"><label>Pathway A (lo hace bien → avatar reacciona así)</label><textarea id="new-pw-a" placeholder="Ej: Se ablanda, reconoce el impacto, propone próximo paso concreto" style="min-height:52px"></textarea></div>
+        <div class="field"><label>Pathway B (lo hace mal → avatar reacciona así)</label><textarea id="new-pw-b" placeholder="Ej: Escala la defensividad, cuestiona la autoridad, cierra el diálogo" style="min-height:52px"></textarea></div>
+        <div class="field"><label>Pathway C (lo hace regular → opcional)</label><textarea id="new-pw-c" placeholder="Ej: Se estabiliza pero sin compromiso claro, queda ambiguo" style="min-height:40px"></textarea></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-small btn-save" onclick="savePathway()">Guardar pathway</button>
+          <button class="btn-small btn-cancel" onclick="toggleAddForm()">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Manual pathway inputs (always visible) -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <div class="field"><label>Pathway A — si lo hace bien</label><input type="text" id="path-a" placeholder="Ej: Se ablanda, reconoce impacto, acuerda próximo paso" /></div>
+        <div class="field"><label>Pathway B — si lo hace mal</label><input type="text" id="path-b" placeholder="Ej: Escala la defensividad, cierra el diálogo" /></div>
+        <div class="field"><label>Pathway C — regular (opcional)</label><input type="text" id="path-c" placeholder="Ej: Se estabiliza pero sin compromiso claro" /></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- MODE -->
+    <div class="field">
+      <label>Modo de sesión</label>
+      <select id="mode" onchange="updateScoringBadge()">
+        <option value="Práctica">Práctica</option>
+        <option value="Assessment">Assessment</option>
+        <option value="Partner">Partner</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SCORING (always shown, adapts per mode) -->
+    <div class="scoring-section">
+      <div class="scoring-title">
+        Criterios de evaluación
+        <span class="mode-badge practice" id="mode-badge">Práctica</span>
+      </div>
+      <div class="scoring-note" style="margin-bottom:10px;margin-top:0;padding-bottom:8px;padding-top:0;border-top:none;border-bottom:1px solid var(--border)">
+        <b>Todos los modos incluyen scoring.</b> En Práctica: feedback inmediato + score orientativo. En Assessment: score formal + certificación. En Partner: reflexión guiada + score suave.
+      </div>
+      <div class="criteria-header">
+        <span>Criterio observable</span>
+        <span style="text-align:center">Peso %</span>
+        <span></span>
+      </div>
+      <div class="criteria-list" id="criteria-list"></div>
+      <button class="btn-add-c" onclick="addCriterion()">+ Agregar criterio</button>
+      <div class="weight-total" id="weight-total"></div>
+      <div class="scoring-note">
+        Define qué conductas observables se evalúan y su peso relativo. Claude las usará como rúbrica para el evaluador y el feedback al learner.
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Idioma</label>
+      <select id="lang">
+        <option value="español (Chile)">Español — Chile</option>
+        <option value="español (México)">Español — México</option>
+        <option value="español neutro">Español — neutro</option>
+        <option value="inglés">English</option>
+        <option value="português (Brasil)">Português — Brasil</option>
+      </select>
+    </div>
+
+    <button class="btn-generate" id="btn" onclick="generate()">Generar 4 prompts</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- COL 2: KNOWLEDGE BASE -->
+  <div class="col">
+    <div class="col-title">Knowledge base</div>
+
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.csv" onchange="handleFiles(this.files)" />
+      <p><strong>Arrastra archivos aquí</strong><br>o haz clic para seleccionar<br><span style="font-size:11px;opacity:0.6">PDF · TXT · MD · CSV — máx 10MB c/u</span></p>
+    </div>
+
+    <div class="file-list" id="file-list"></div>
+
+    <div class="divider"></div>
+
+    <div class="field"><label>Framework 100 Minds (texto)</label><textarea id="kb-framework" placeholder="Pega tu framework de Power Skills, definiciones, niveles de competencia..." style="min-height:90px"></textarea></div>
+    <div class="field"><label>Cultura / valores empresa cliente</label><textarea id="kb-company" placeholder="Valores, propósito, desafíos actuales, contexto organizacional..." style="min-height:90px"></textarea></div>
+
+    <div style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;line-height:1.6">
+      Los documentos se envían directo a Claude. El avatar habla con la voz de la empresa, el evaluador usa tu framework real.
+    </div>
+  </div>
+
+  <!-- COL 3: OUTPUT -->
+  <div class="col" style="border-right:none">
+    <div class="col-title">Prompts generados</div>
+    <div class="role-tabs">
+      <button class="rtab active" onclick="switchTab('avatar',this)">Avatar</button>
+      <button class="rtab" onclick="switchTab('evaluator',this)">Evaluador</button>
+      <button class="rtab" onclick="switchTab('learner',this)">Learner</button>
+      <button class="rtab" onclick="switchTab('manager',this)">Manager</button>
+    </div>
+    <div class="prompt-card">
+      <div class="prompt-card-header">
+        <div class="role-info">
+          <div class="role-dot" id="role-dot" style="background:#c8a96e"></div>
+          <div>
+            <div class="role-name" id="role-name">Avatar</div>
+            <div class="role-desc" id="role-desc">Mantiene el personaje durante la simulación</div>
+          </div>
+        </div>
+        <button class="btn-copy" onclick="copyPrompt()">Copiar</button>
+      </div>
+      <div class="prompt-body empty" id="prompt-display">Los prompts aparecerán aquí.
+
+1. Completa el escenario
+2. Selecciona o escribe los pathways
+3. Define los criterios de evaluación
+4. Carga tu KB (opcional)
+5. Presiona "Generar 4 prompts"</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const prompts = { avatar:'', evaluator:'', learner:'', manager:'' };
+let activeRole = 'avatar';
+const uploadedFiles = [];
+let criteria = [];
+
+const roleConfig = {
+  avatar:    { label:'Avatar',    desc:'Mantiene el personaje durante la simulación', color:'#c8a96e' },
+  evaluator: { label:'Evaluador', desc:'Evalúa conducta observable con la rúbrica',   color:'#8fb89a' },
+  learner:   { label:'Learner',   desc:'Entrega feedback desarrollador al aprendiz',   color:'#8faacc' },
+  manager:   { label:'Manager',   desc:'Genera reporte objetivo post-sesión',          color:'#b89a8f' }
+};
+
+// ── DEFAULT PATHWAY LIBRARY ──
+const defaultPathways = [
+  {
+    name: 'Feedback — Defensivo — General',
+    a: 'El avatar baja la guardia, reconoce el comportamiento específico con un ejemplo concreto, y se compromete a un cambio observable en la próxima reunión.',
+    b: 'El avatar escala la defensividad, cuestiona la percepción del líder, introduce contraejemplos, y cierra emocionalmente el diálogo.',
+    c: 'El avatar acepta superficialmente pero sin convicción real, no propone ningún cambio concreto, queda ambiguo.'
+  },
+  {
+    name: 'Feedback — Sensible — General',
+    a: 'El avatar procesa el feedback con vulnerabilidad, agradece la claridad, y propone un paso concreto para mejorar.',
+    b: 'El avatar se paraliza emocionalmente, interpreta el feedback como ataque personal, y se desconecta de la conversación.',
+    c: 'El avatar escucha pero no logra separar el comportamiento de su identidad, queda inseguro sin un plan claro.'
+  },
+  {
+    name: 'Desescalar conflicto — Reactivo',
+    a: 'El avatar baja la intensidad emocional al sentirse escuchado, colabora en buscar una solución compartida.',
+    b: 'El avatar interpreta la intervención como condescendiente, se activa más, lleva el conflicto al plano personal.',
+    c: 'El avatar se contiene pero no resuelve, el conflicto queda latente sin acuerdo real.'
+  },
+  {
+    name: 'Conversación difícil — Bajo desempeño',
+    a: 'El avatar comprende la brecha con evidencia específica, acepta el plan de desarrollo, se compromete a indicadores concretos.',
+    b: 'El avatar niega el bajo desempeño, atribuye el problema a factores externos, deslegitima la evaluación.',
+    c: 'El avatar acepta parcialmente, pide más tiempo sin comprometerse a métricas claras.'
+  },
+  {
+    name: 'Negociación — Resistencia al cambio',
+    a: 'El avatar ve el beneficio del cambio para su rol específico, propone una manera de implementarlo.',
+    b: 'El avatar activa resistencia activa, moviliza a otros colegas, convierte el tema en político.',
+    c: 'El avatar no resiste abiertamente pero tampoco adopta el cambio, espera que pase solo.'
+  },
+  {
+    name: 'Problem solving colaborativo',
+    a: 'El avatar contribuye con perspectiva complementaria, cocrea la solución, asume responsabilidad en la implementación.',
+    b: 'El avatar descalifica las ideas propuestas, no aporta alternativas, bloquea el avance.',
+    c: 'El avatar participa sin comprometerse, apoya verbalmente pero no en los hechos.'
+  }
+];
+
+// ── DEFAULT CRITERIA ──
+const defaultCriteria = [
+  { name: 'Conducta observable nombrada (sin juicio de persona)', weight: 30 },
+  { name: 'Escucha activa y manejo de la emocionalidad', weight: 25 },
+  { name: 'Cierre con acuerdo o próximo paso concreto', weight: 25 },
+  { name: 'Tono y lenguaje apropiados al contexto', weight: 20 }
+];
+
+// ── INIT ──
+function init() {
+  loadKey();
+  populatePathwayDropdown();
+  criteria = defaultCriteria.map(c => ({...c}));
+  renderCriteria();
+  loadSavedPathways();
+}
+
+function populatePathwayDropdown() {
+  const sel = document.getElementById('pathway-select');
+  // Clear all but first
+  while (sel.options.length > 1) sel.remove(1);
+
+  const saved = getSavedPathways();
+  if (saved.length > 0) {
+    const og = document.createElement('optgroup');
+    og.label = 'Mis pathways guardados';
+    saved.forEach((pw, i) => {
+      const opt = document.createElement('option');
+      opt.value = 'saved_' + i;
+      opt.textContent = pw.name;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  }
+
+  const og2 = document.createElement('optgroup');
+  og2.label = 'Biblioteca 100 Minds';
+  defaultPathways.forEach((pw, i) => {
+    const opt = document.createElement('option');
+    opt.value = 'default_' + i;
+    opt.textContent = pw.name;
+    og2.appendChild(opt);
+  });
+  sel.appendChild(og2);
+}
+
+function loadPathway(val) {
+  if (!val) { document.getElementById('pathway-preview').classList.remove('visible'); return; }
+  let pw;
+  if (val.startsWith('default_')) pw = defaultPathways[parseInt(val.split('_')[1])];
+  else { const saved = getSavedPathways(); pw = saved[parseInt(val.split('_')[1])]; }
+  if (!pw) return;
+
+  document.getElementById('path-a').value = pw.a;
+  document.getElementById('path-b').value = pw.b;
+  document.getElementById('path-c').value = pw.c || '';
+
+  const preview = document.getElementById('pathway-preview');
+  preview.classList.add('visible');
+  preview.innerHTML = `
+    <div class="pw-row"><span class="pw-label">Pathway A — bien</span><span class="pw-val pw-a">${pw.a}</span></div>
+    <div class="pw-row"><span class="pw-label">Pathway B — mal</span><span class="pw-val pw-b">${pw.b}</span></div>
+    ${pw.c ? `<div class="pw-row"><span class="pw-label">Pathway C — regular</span><span class="pw-val">${pw.c}</span></div>` : ''}
+  `;
+}
+
+function toggleAddForm() {
+  const form = document.getElementById('add-pathway-form');
+  form.classList.toggle('visible');
+}
+
+function getSavedPathways() {
+  try { return JSON.parse(localStorage.getItem('mindy_pathways') || '[]'); } catch { return []; }
+}
+
+
+function saveKey() {
+  const k = document.getElementById('api-key').value.trim();
+  if (!k || !k.startsWith('sk-')) { alert('La key debe empezar con sk-ant-'); return; }
+  localStorage.setItem('mindy_api_key', k);
+  document.getElementById('api-key-status').textContent = '✓ guardada';
+  document.getElementById('api-key').type = 'password';
+}
+
+function loadKey() {
+  const k = localStorage.getItem('mindy_api_key');
+  if (k) {
+    document.getElementById('api-key').value = k;
+    document.getElementById('api-key-status').textContent = '✓ guardada';
+  }
+}
+
+function savePathway() {
+  const name = document.getElementById('new-pw-name').value.trim();
+  const a    = document.getElementById('new-pw-a').value.trim();
+  const b    = document.getElementById('new-pw-b').value.trim();
+  const c    = document.getElementById('new-pw-c').value.trim();
+  if (!name || !a || !b) { alert('Completa al menos nombre, Pathway A y Pathway B.'); return; }
+  const saved = getSavedPathways();
+  saved.unshift({ name, a, b, c });
+  localStorage.setItem('mindy_pathways', JSON.stringify(saved));
+  document.getElementById('new-pw-name').value = '';
+  document.getElementById('new-pw-a').value = '';
+  document.getElementById('new-pw-b').value = '';
+  document.getElementById('new-pw-c').value = '';
+  toggleAddForm();
+  populatePathwayDropdown();
+  // Auto-select the newly saved one
+  const sel = document.getElementById('pathway-select');
+  sel.value = 'saved_0';
+  loadPathway('saved_0');
+}
+
+function loadSavedPathways() { populatePathwayDropdown(); }
+
+// ── SCORING ──
+function addCriterion(name = '', weight = 20) {
+  criteria.push({ name, weight });
+  renderCriteria();
+}
+
+function removeCriterion(i) {
+  criteria.splice(i, 1);
+  renderCriteria();
+}
+
+function renderCriteria() {
+  const list = document.getElementById('criteria-list');
+  list.innerHTML = '';
+  criteria.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.className = 'criterion-row';
+    row.innerHTML = `
+      <input type="text" value="${c.name}" placeholder="Ej: Nombra conducta observable"
+        oninput="criteria[${i}].name = this.value" />
+      <input type="number" min="0" max="100" value="${c.weight}"
+        oninput="criteria[${i}].weight = parseInt(this.value)||0; updateWeightTotal()" />
+      <button class="btn-remove-c" onclick="removeCriterion(${i})">×</button>
+    `;
+    list.appendChild(row);
+  });
+  updateWeightTotal();
+}
+
+function updateWeightTotal() {
+  const total = criteria.reduce((s, c) => s + (parseInt(c.weight) || 0), 0);
+  const el = document.getElementById('weight-total');
+  el.textContent = `Total: ${total}%`;
+  el.className = 'weight-total ' + (total === 100 ? 'ok' : 'warn');
+}
+
+function updateScoringBadge() {
+  const mode = document.getElementById('mode').value;
+  const badge = document.getElementById('mode-badge');
+  badge.textContent = mode;
+  badge.className = 'mode-badge ' + mode.toLowerCase().replace('á','a').replace('é','e');
+}
+
+// ── ARCHETYPE CUSTOM ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('archetype').addEventListener('change', function() {
+    document.getElementById('archetype-custom-field').style.display =
+      this.value === 'custom' ? 'flex' : 'none';
+  });
+  init();
+});
+
+// ── FILE UPLOAD ──
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+
+function handleFiles(fileList) {
+  Array.from(fileList).forEach(file => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['pdf','txt','md','csv'].includes(ext)) { alert(`Formato no soportado: .${ext}`); return; }
+    if (file.size > 10*1024*1024) { alert(`${file.name} es muy grande (máx 10MB).`); return; }
+    if (uploadedFiles.find(f => f.name === file.name)) return;
+    const reader = new FileReader();
+    const cat = guessCategory(file.name);
+    if (ext === 'pdf') {
+      reader.onload = e => { uploadedFiles.push({ name:file.name, size:file.size, ext, category:cat, content:e.target.result.split(',')[1], mediaType:'application/pdf' }); renderFileList(); };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = e => { uploadedFiles.push({ name:file.name, size:file.size, ext, category:cat, content:e.target.result, mediaType:'text/plain' }); renderFileList(); };
+      reader.readAsText(file);
+    }
+  });
+  document.getElementById('file-input').value = '';
+}
+
+function guessCategory(name) {
+  const n = name.toLowerCase();
+  if (n.includes('power') || n.includes('skill') || n.includes('framework') || n.includes('compet')) return 'powerskill';
+  if (n.includes('manual') || n.includes('sop') || n.includes('protocol') || n.includes('politica') || n.includes('policy') || n.includes('procedim')) return 'manual';
+  return 'company';
+}
+
+function fmtSize(b) { return b < 1024 ? b+'B' : b < 1024*1024 ? (b/1024).toFixed(0)+'KB' : (b/1024/1024).toFixed(1)+'MB'; }
+
+function renderFileList() {
+  const list = document.getElementById('file-list');
+  list.innerHTML = '';
+  uploadedFiles.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.innerHTML = `
+      <div class="file-icon ${f.ext === 'pdf' ? 'pdf' : 'txt'}">${f.ext.toUpperCase()}</div>
+      <div class="file-meta">
+        <div class="file-name" title="${f.name}">${f.name}</div>
+        <div class="file-size">${fmtSize(f.size)}</div>
+      </div>
+      <select class="file-category" onchange="uploadedFiles[${i}].category=this.value">
+        <option value="powerskill" ${f.category==='powerskill'?'selected':''}>Framework</option>
+        <option value="company"    ${f.category==='company'   ?'selected':''}>Empresa</option>
+        <option value="manual"     ${f.category==='manual'    ?'selected':''}>Manual/SOP</option>
+      </select>
+      <button class="btn-remove" onclick="uploadedFiles.splice(${i},1);renderFileList()">×</button>
+    `;
+    list.appendChild(item);
+  });
+}
+
+// ── GENERATE ──
+function val(id) { return (document.getElementById(id)?.value||'').trim(); }
+function setStatus(msg, type) { const el=document.getElementById('status'); el.textContent=msg; el.className='status '+(type||''); }
+
+async function generate() {
+  const apiKey = val('api-key');
+  if (!apiKey || !apiKey.startsWith('sk-')) { setStatus('Ingresa y guarda tu API key primero.', 'error'); return; }
+  if (!val('scenario-name')) { setStatus('Agrega el nombre del escenario.', 'error'); return; }
+
+  const archetypeEl = document.getElementById('archetype');
+  const archetype = archetypeEl.value === 'custom' ? val('archetype-custom') : archetypeEl.value;
+  const mode = val('mode');
+
+  // Build rubric block
+  const totalWeight = criteria.reduce((s,c) => s+(parseInt(c.weight)||0), 0);
+  const rubricBlock = criteria.length > 0
+    ? criteria.map(c => `  - ${c.name}: ${c.weight}%`).join('\n') +
+      (totalWeight !== 100 ? `\n  (Nota: pesos suman ${totalWeight}%, normalizar al evaluar)` : '')
+    : '  (sin criterios definidos — usa criterios generales de la competencia)';
+
+  const scoringInstructions = {
+    'Práctica': 'Modo PRÁCTICA: Entrega score orientativo (0-100) con desglose por criterio. El tono es de aprendizaje seguro — el score es formativo, no punitivo. Destaca 1-2 fortalezas y 1 área de mejora concreta.',
+    'Assessment': 'Modo ASSESSMENT: Entrega score formal (0-100) con desglose por criterio, nivel de dominio (Inicial/En desarrollo/Competente/Experto), y resultado de certificación (Aprobado si ≥70, No aprobado si <70). Sé riguroso y basado solo en evidencia observable.',
+    'Partner': 'Modo PARTNER: Entrega score suave (0-100) como punto de partida para reflexión. El foco es la conversación sobre el aprendizaje, no la calificación. Haz 1-2 preguntas de reflexión al learner al final del feedback.'
+  };
+
+  const scenarioBlock = `
+SKILL: ${val('skill')||'(no especificado)'}
+FRAMEWORK / POWERTIP: ${val('powertip')||'(no especificado)'}
+ESCENARIO: ${val('scenario-name')}
+CONTEXTO: ${val('context')||'(no especificado)'}
+ROL LEARNER: ${val('learner-role')||'(no especificado)'}
+ROL AVATAR: ${val('avatar-role')||'(no especificado)'}
+ARQUETIPO: ${archetype}
+PATHWAY A (bien): ${val('path-a')||'(no especificado)'}
+PATHWAY B (mal): ${val('path-b')||'(no especificado)'}
+PATHWAY C (regular): ${val('path-c')||'(no definido)'}
+MODO: ${mode}
+IDIOMA: ${val('lang')}
+
+RÚBRICA DE EVALUACIÓN:
+${rubricBlock}
+`.trim();
+
+  const kbText = [val('kb-framework') ? `FRAMEWORK 100 MINDS:\n${val('kb-framework')}` : '',
+                  val('kb-company')   ? `CULTURA EMPRESA:\n${val('kb-company')}` : ''].filter(Boolean).join('\n\n');
+
+  const systemPrompt = `Eres un experto en diseño de simulaciones de liderazgo y evaluación de competencias conductuales. Genera 4 system prompts diferenciados para la plataforma Mindy de 100 Minds.
+
+USA los documentos adjuntos (framework, KB empresa, manuales) para personalizar los prompts. El avatar debe sonar como alguien de esa empresa real. El evaluador debe usar el framework y la rúbrica exacta proporcionada.
+
+LOS 4 ROLES:
+1. AVATAR: Encarna al personaje con el arquetipo dado. Nunca sale del personaje. Nunca hace coaching. Sigue el pathway según la conducta del learner (A si lo hace bien, B si lo hace mal, C si es regular). Si hay KB de empresa, habla con su lenguaje y cultura.
+
+2. EVALUADOR: Evalúa la conducta observable del learner usando EXACTAMENTE la rúbrica proporcionada. ${scoringInstructions[mode]} Solo usa evidencia del transcript. Estructura: score total + desglose por criterio + síntesis.
+
+3. LEARNER FEEDBACK: Feedback personal al aprendiz en tono desarrollador. Empieza por fortalezas (con ejemplo del transcript), luego brecha específica (con ejemplo), luego 1 paso concreto para la próxima vez. Incluye el score del evaluador de forma accesible.
+
+4. MANAGER REPORT: Reporte estructurado para manager/RRHH. Conducta observada (objetiva, sin juicios), score con desglose, resultado según modo (${mode}), tendencias si hay sesiones previas.
+
+REGLAS CRÍTICAS:
+- Cada prompt es FUNCIONALMENTE DISTINTO. Voz, propósito y estructura diferentes.
+- Todos los prompts en: ${val('lang')}
+- Máximo ~350 palabras por prompt.
+- El evaluador DEBE referenciar los criterios de la rúbrica por nombre.
+
+RESPONDE SOLO con JSON válido: { avatar, evaluator, learner, manager }. Sin markdown, sin texto extra.`;
+
+  const userContent = [];
+  uploadedFiles.forEach(f => {
+    if (f.mediaType === 'application/pdf') {
+      userContent.push({ type:'text', text:`[KB — ${f.category} — ${f.name}]` });
+      userContent.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data:f.content } });
+    } else {
+      userContent.push({ type:'text', text:`[KB — ${f.category} — ${f.name}]\n\n${f.content}` });
+    }
+  });
+  userContent.push({ type:'text', text:`Genera los 4 prompts:\n\n${scenarioBlock}${kbText ? '\n\n'+kbText : ''}` });
+
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generando...';
+  setStatus('Enviando a Claude' + (uploadedFiles.length ? ` + ${uploadedFiles.length} doc(s)` : '') + '...', '');
+  Object.keys(prompts).forEach(k => prompts[k] = '');
+  showRole(activeRole);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4096,
+        system: systemPrompt,
+        messages:[{ role:'user', content: userContent }]
+      })
+    });
+
+    if (!res.ok) { const e=await res.json(); throw new Error(e.error?.message||`HTTP ${res.status}`); }
+    const data = await res.json();
+    const raw = data.content.map(b=>b.text||'').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    prompts.avatar    = parsed.avatar    || '';
+    prompts.evaluator = parsed.evaluator || '';
+    prompts.learner   = parsed.learner   || '';
+    prompts.manager   = parsed.manager   || '';
+
+    showRole(activeRole);
+    setStatus('Generado · ' + new Date().toLocaleTimeString('es-CL'), 'ok');
+  } catch(e) {
+    setStatus('Error: ' + e.message, 'error');
+    const body = document.getElementById('prompt-display');
+    body.textContent = 'Error al generar.\n\n' + e.message;
+    body.classList.add('empty');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Regenerar prompts';
+}
+
+function showRole(role) {
+  activeRole = role;
+  const cfg = roleConfig[role];
+  document.getElementById('role-name').textContent = cfg.label;
+  document.getElementById('role-desc').textContent = cfg.desc;
+  document.getElementById('role-dot').style.background = cfg.color;
+  const body = document.getElementById('prompt-display');
+  const text = prompts[role];
+  if (text) { body.textContent = text; body.classList.remove('empty'); }
+  else { body.textContent = 'Genera los prompts primero.'; body.classList.add('empty'); }
+}
+
+function switchTab(role, el) {
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  showRole(role);
+}
+
+function copyPrompt() {
+  const text = prompts[activeRole];
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent = 'Copiado ✓';
+    setTimeout(() => btn.textContent = 'Copiar', 1600);
+  });
+}
+</script>
+</body>
+</html>
